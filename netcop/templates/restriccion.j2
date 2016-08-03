@@ -14,7 +14,7 @@
   {% for origen in politica.origenes %}
     {% for destino in politica.destinos %}
       {# objetivo define redes #}
-      iptables -A FORWARD -s {{ origen.clase.redes|join(',') }} -d {{ destino.clase.redes|join(',') }} DROP
+      iptables -A FORWARD -s {{ origen.clase.redes|join(',') }} -d {{ destino.clase.redes|join(',') }} -j DROP
     {% endfor %}
   {% endfor %}
 
