@@ -5,6 +5,18 @@
 
 ## Instalación
 
+```sh
+python setup.py install
+```
+
 ## Ejecución
 
-## Pruebas
+```sh
+$ despachante
+```
+
+## Ejecutar pruebas
+
+```sh
+python setup.py tests
+```
