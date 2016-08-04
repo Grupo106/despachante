@@ -209,30 +209,30 @@ class Objetivo(models.Model):
         '''
         Obtiene los flags para que coincida las subredes de la clase.
         '''
-        flags = {}
-        if self.clase and len(self.clase.redes) > 0:
+        flags = dict()
+        if self.clase and self.clase.redes.count() > 0:
             flag = '-s' if self.tipo == Objetivo.ORIGEN else '-d'
-            redes = []
+            redes = set()
             for item in self.clase.redes:
-                redes.append(str(item.cidr))
-            flags = {flag: ",".join(set(redes))}
+                redes.add(str(item.cidr))
+            flags = {flag: ",".join(redes)}
         return flags
 
     def puertos_flags(self):
         '''
         Obtiene los flags para que coincida los puertos de la clase.
         '''
-        flags = {}
-        if self.clase and  len(self.clase.puertos) > 0:
+        flags = dict()
+        if self.clase and self.clase.puertos.count() > 0:
             flag = '--sport' if self.tipo == Objetivo.ORIGEN else '--dport'
-            puertos = []
-            protocolos = []
+            puertos = set()
+            protocolos = set()
             for item in self.clase.puertos:
-                puertos.append(str(item.puerto.numero))
-                protocolos.append(str(item.puerto.protocolo))
+                puertos.add(str(item.puerto.numero))
+                protocolos.add(str(item.puerto.protocolo))
             flags = {
-                flag: ",".join(set(puertos)),
-                '-p': ",".join(set(protocolos))
+                flag: ",".join(puertos),
+                '-p': ",".join(protocolos)
             }
         return flags
 
