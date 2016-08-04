@@ -271,6 +271,74 @@ class DespachanteTests(unittest.TestCase):
 
             transaction.rollback()
 
-    @unittest.skip("no implementado")
-    def test_flags_politica(self):
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_restriccion_destino(self):
+        '''
+        Prueba obtener los flags de una politica de restriccion que solo defina
+        objetivos como destino.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_restriccion_origen(self):
+        '''
+        Prueba obtener los flags de una politica de restriccion que solo defina
+        objetivos como origen.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_restriccion_origen_destino(self):
+        '''
+        Prueba obtener los flags de una politica de restriccion que solo defina
+        objetivos como origen y destino.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_limitacion_destino(self):
+        '''
+        Prueba obtener los flags de una politica de limitacion que solo defina
+        objetivos como destino.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_limitacion_origen(self):
+        '''
+        Prueba obtener los flags de una politica de limitacion que solo defina
+        objetivos como origen.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_limitacion_origen_destino(self):
+        '''
+        Prueba obtener los flags de una politica de limitacion que solo defina
+        objetivos como origen y destino.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_priorizacion_destino(self):
+        '''
+        Prueba obtener los flags de una politica de priorizacion que solo
+        defina objetivos como destino.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_priorizacion_origen(self):
+        '''
+        Prueba obtener los flags de una politica de priorizacion que solo
+        defina objetivos como origen.
+        '''
+        pass
+
+    @unittest.skip("NO IMPLEMENTADO")
+    def test_flags_politica_priorizacion_origen_destino(self):
+        '''
+        Prueba obtener los flags de una politica de priorizacion que solo
+        defina objetivos como origen y destino.
+        '''
         pass
