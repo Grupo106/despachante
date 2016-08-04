@@ -30,7 +30,7 @@ class ClaseTrafico(models.Model):
     SISTEMA = 0
     id_clase = models.PrimaryKeyField()
     nombre = models.CharField(max_length=32)
-    descripcion = models.CharField(max_length=160)
+    descripcion = models.CharField(max_length=160, default="")
     tipo = models.SmallIntegerField(default=0)
     activa = models.BooleanField(default=True)
 
@@ -60,7 +60,7 @@ class CIDR(models.Model):
     prefijo = models.SmallIntegerField(default=0)
 
     def __str__(self):
-        return u"%d: %s/%d" % (self.id_cidr, self.direccion, self.prefijo)
+        return u"%s/%d" % (self.direccion, self.prefijo)
 
     class Meta:
         database = db
@@ -85,7 +85,7 @@ class Puerto(models.Model):
             proto = "tcp"
         elif self.protocolo == 17:
             proto = "udp"
-        return u"%d: %s/%s" % (self.id_puerto, self.numero, proto)
+        return u"%s/%s" % (self.numero, proto)
 
     class Meta:
         database = db
@@ -194,6 +194,29 @@ class Objetivo(models.Model):
         Devuelve un diccionario con los flags necesarios para configurar el
         iptables para que capture los hosts definidos en el objetivo.
         '''
+        if self.direccion_fisica is not None:
+            return {
+                '-m': 'mac',
+                '--mac-source': self.direccion_fisica   
+            }
+        if self.clase is not None:
+            if len(self.clase.redes) > 0:
+                flag = '-s' if self.tipo == Objetivo.ORIGEN else '-d'
+                redes = []
+                for item in self.clase.redes:
+                    redes.append(str(item.cidr))
+                return {flag: ",".join(redes)}
+            elif len(self.clase.puertos) > 0:
+                flag = '--sport' if self.tipo == Objetivo.ORIGEN else '--dport'
+                puertos = []
+                protocolos = []
+                for item in self.clase.puertos:
+                    puertos.append(str(item.puerto.numero))
+                    protocolos.append(str(item.puerto.protocolo))
+                return {
+                    flag: ",".join(puertos),
+                    '-p': ",".join(protocolos)
+                }
         return {}
 
 

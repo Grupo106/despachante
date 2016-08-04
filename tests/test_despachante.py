@@ -23,37 +23,186 @@ class DespachanteTests(unittest.TestCase):
             safe=True)
 
     def test_origenes(self):
-        # preparo datos
-        politica = models.Politica.create(nombre='foo')
-        models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
-                               politica=politica,
-                               tipo=models.Objetivo.ORIGEN)
-        models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
-                               politica=politica,
-                               tipo=models.Objetivo.DESTINO)
-        # llamo metodo a probar
-        lista = politica.origenes
-        # verifico que todo este bien
-        assert len(lista) == 1
-        assert lista[0].direccion_fisica == '00:00:00:00:00:01'
+        '''
+        Prueba obtener los hosts de origen de una politica.
+        '''
+        # creo transaccion para descartar cambios generados en la base
+        with models.db.atomic() as transaction:
+            # preparo datos
+            politica = models.Politica.create(nombre='foo')
+            models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
+                                   politica=politica,
+                                   tipo=models.Objetivo.ORIGEN)
+            models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
+                                   politica=politica,
+                                   tipo=models.Objetivo.DESTINO)
+            # llamo metodo a probar
+            lista = politica.origenes
+            # verifico que todo este bien
+            assert len(lista) == 1
+            assert lista[0].direccion_fisica == '00:00:00:00:00:01'
+            # descarto cambios en la base de datos
+            transaction.rollback()
 
     def test_destinos(self):
+        '''
+        Prueba obtener los hosts de destino de una politica.
+        '''
+        # creo transaccion para descartar cambios generados en la base
+        with models.db.atomic() as transaction:
+            # preparo datos
+            politica = models.Politica.create(nombre='foo')
+            models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
+                                   politica=politica,
+                                   tipo=models.Objetivo.ORIGEN)
+            models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
+                                   politica=politica,
+                                   tipo=models.Objetivo.DESTINO)
+            # llamo metodo a probar
+            lista = politica.destinos
+            # verifico que todo este bien
+            assert len(lista) == 1
+            assert lista[0].direccion_fisica == '00:00:00:00:00:02'
+            # descarto cambios en la base de datos
+            transaction.rollback()
+
+    def test_flags_objetivo_mac(self):
+        '''
+        Prueba obtener los flags de un objetivo que defina una mac address.
+
+        Solamente se pueden especificar mac-address como origen de la regla.
+        '''
         # preparo datos
-        politica = models.Politica.create(nombre='foo')
-        models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
-                               politica=politica,
-                               tipo=models.Objetivo.ORIGEN)
-        models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
-                               politica=politica,
-                               tipo=models.Objetivo.DESTINO)
+        objetivo = models.Objetivo(
+            direccion_fisica='00:00:00:00:00:01',
+            tipo=models.Objetivo.ORIGEN
+        )
         # llamo metodo a probar
-        lista = politica.destinos
+        flags = objetivo.flags()
         # verifico que todo este bien
-        assert len(lista) == 1
-        assert lista[0].direccion_fisica == '00:00:00:00:00:02'
+        assert flags['-m'] == 'mac'
+        assert flags['--mac-source'] == '00:00:00:00:00:01'
+        # preparo datos, debe ignorar que se especifico como destino
+        objetivo = models.Objetivo(
+            direccion_fisica='00:00:00:00:00:02',
+            tipo=models.Objetivo.DESTINO
+        )
+        # llamo metodo a probar
+        flags = objetivo.flags()
+        # verifico que todo este bien
+        assert flags['-m'] == 'mac'
+        assert flags['--mac-source'] == '00:00:00:00:00:02'
+
+    def test_flags_objetivo_redes(self):
+        '''
+        Prueba obtener los flags de un objetivo que defina una clase de trafico
+        que define redes.
+        '''
+        # creo transaccion para descartar cambios generados en la base
+        with models.db.atomic() as transaction:
+            # preparo datos
+            clase = models.ClaseTrafico.create(
+                id_clase=60606060,
+                nombre='foo',
+                descripcion='bar',
+            )
+            cidr = [
+                models.CIDR.create(
+                    direccion='192.168.1.0',
+                    prefijo=24,
+                ),
+                models.CIDR.create(
+                    direccion='192.168.2.0',
+                    prefijo=24,
+                )
+            ]
+            for red in cidr:
+                models.ClaseCIDR.create(clase=clase, cidr=red,
+                                        grupo=models.OUTSIDE)
+
+            # creo objetivo como origen
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.ORIGEN
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert flags['-s'] == '192.168.1.0/24,192.168.2.0/24'
+
+            # creo objetivo como destino
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.DESTINO
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert flags['-d'] == '192.168.1.0/24,192.168.2.0/24'
+
+            transaction.rollback()
+
+    def test_flags_objetivo_puertos(self):
+        '''
+        Prueba obtener los flags de un objetivo que defina una clase de trafico
+        que define puertos
+        '''
+        # creo transaccion para descartar cambios generados en la base
+        with models.db.atomic() as transaction:
+            # preparo datos
+            clase = models.ClaseTrafico.create(
+                id_clase=60606060,
+                nombre='foo',
+                descripcion='bar',
+            )
+            puertos = [
+                models.Puerto.create(
+                    numero=53,
+                    protocolo=17,
+                ),
+                models.Puerto.create(
+                    numero=22,
+                    protocolo=6,
+                )
+            ]
+            for item in puertos:
+                models.ClasePuerto.create(clase=clase, puerto=item,
+                                          grupo=models.OUTSIDE)
+
+            # creo objetivo como origen
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.ORIGEN
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert '53' in flags['--sport']
+            assert '22' in flags['--sport']
+            assert '6' in flags['-p']
+            assert '17' in flags['-p']
+
+            # creo objetivo como destino
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.DESTINO
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert '53' in flags['--dport']
+            assert '22' in flags['--dport']
+            assert '6' in flags['-p']
+            assert '17' in flags['-p']
+
+            transaction.rollback()
 
     @unittest.skip("no implementado")
-    def test_flags_objetivo(self):
+    def test_flags_objetivo_redes_puertos(self):
+        '''
+        Prueba obtener los flags de un objetivo que defina una clase de trafico
+        que define redes y puertos
+        '''
         pass
 
     @unittest.skip("no implementado")
