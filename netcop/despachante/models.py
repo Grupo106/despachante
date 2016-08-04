@@ -235,6 +235,7 @@ class Objetivo(models.Model):
         '''
         Obtiene los flags para que coincida los puertos de la clase.
         '''
+        # FIXME: Multiport!!!
         flags = dict()
         if self.clase and self.clase.puertos.count() > 0:
             flag = (Flag.PUERTO_ORIGEN if self.tipo == Objetivo.ORIGEN else
