@@ -16,7 +16,7 @@ python setup.py install
 ## Ejecución
 
 ```sh
-$ despachante
+$ despachar
 ```
 
 ## Ejecutar pruebas
