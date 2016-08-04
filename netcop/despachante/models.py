@@ -7,7 +7,7 @@ las consultas a la base de datos en lenguaje python de forma sencilla sin
 necesidad de escribir codigo SQL.
 '''
 import peewee as models
-from netcop import config
+from . import config
 
 # Identificador de grupo para servicios que esten en la red local
 INSIDE = 'i'
@@ -145,6 +145,31 @@ class Politica(models.Model):
     prioridad = models.SmallIntegerField(null=True)
     velocidad_maxima = models.IntegerField(null=True)
 
+    def flags(self):
+        '''
+        Devuelve una lista de diccionarios con los flags necesarios para
+        configurar el iptables para que capture los hosts definidos en la
+        política.
+        '''
+        return []
+
+    @property
+    def origenes(self):
+        '''
+        Devuelve una lista con todos los objetivos que definen los hosts de
+        origen.
+        '''
+        return self.objetivos.select().where(Objetivo.tipo == Objetivo.ORIGEN)
+
+    @property
+    def destinos(self):
+        '''
+        Devuelve una lista con todos los objetivos que definen los hosts de
+        destino.
+        '''
+        return self.objetivos.select().where(Objetivo.tipo == Objetivo.DESTINO)
+
+
     class Meta:
         database = db
         db_table = u'politica'
@@ -153,23 +178,29 @@ class Politica(models.Model):
 class Objetivo(models.Model):
     '''
     Especifica los objetivos a los que se les va a aplicar la politica.
-
-    Tipos
-    ------
-        * 'd': Destino
-        * 'o': Origen
     ''' 
+    ORIGEN = 'o'
+    DESTINO = 'd'
     id_objetivo = models.PrimaryKeyField()
     politica = models.ForeignKeyField(Politica, related_name='objetivos',
                                       db_column='id_politica')
     clase = models.ForeignKeyField(ClaseTrafico, related_name='objetivos',
-                                      db_column='id_clase')
+                                   db_column='id_clase', null=True)
     tipo = models.CharField(max_length=1, default='d')
     direccion_fisica = models.CharField(null=True)
+
+    def flags(self):
+        '''
+        Devuelve un diccionario con los flags necesarios para configurar el
+        iptables para que capture los hosts definidos en el objetivo.
+        '''
+        return {}
+
 
     class Meta:
         database = db
         db_table = u'objetivo'
+
 
 class RangoHorario(models.Model):
     '''
@@ -177,16 +208,17 @@ class RangoHorario(models.Model):
 
     Atributos
     ----------
-        * dia: Dia de la semana, entre 0 y 6 siendo 0 el dia domingo
+        * dia: Dia de la semana, entre 0 y 6 siendo 0 el dia domingo y 6 sabado
         * hora_inicial: Hora de inicio del rango valido 
         * hora_fin: Hora de fin del rango valido 
     ''' 
-    id_rango_horario = models.ForeignKeyField()
+    id_rango_horario = models.PrimaryKeyField()
     politica = models.ForeignKeyField(Politica, related_name='horarios',
                                       db_column='id_politica')
     dia = models.SmallIntegerField()
-    hora_inicial = TimeField()
-    hora_fin = TimeField()
+    hora_inicial = models.TimeField()
+    hora_fin = models.TimeField()
+
 
     class Meta:
         database = db
