@@ -194,30 +194,47 @@ class Objetivo(models.Model):
         Devuelve un diccionario con los flags necesarios para configurar el
         iptables para que capture los hosts definidos en el objetivo.
         '''
+        flags = dict()
         if self.direccion_fisica is not None:
-            return {
+            flags.update ({
                 '-m': 'mac',
                 '--mac-source': self.direccion_fisica   
-            }
+            })
         if self.clase is not None:
-            if len(self.clase.redes) > 0:
-                flag = '-s' if self.tipo == Objetivo.ORIGEN else '-d'
-                redes = []
-                for item in self.clase.redes:
-                    redes.append(str(item.cidr))
-                return {flag: ",".join(redes)}
-            elif len(self.clase.puertos) > 0:
-                flag = '--sport' if self.tipo == Objetivo.ORIGEN else '--dport'
-                puertos = []
-                protocolos = []
-                for item in self.clase.puertos:
-                    puertos.append(str(item.puerto.numero))
-                    protocolos.append(str(item.puerto.protocolo))
-                return {
-                    flag: ",".join(puertos),
-                    '-p': ",".join(protocolos)
-                }
-        return {}
+            flags.update(self.subredes_flags())
+            flags.update(self.puertos_flags())
+        return flags
+
+    def subredes_flags(self):
+        '''
+        Obtiene los flags para que coincida las subredes de la clase.
+        '''
+        flags = {}
+        if self.clase and len(self.clase.redes) > 0:
+            flag = '-s' if self.tipo == Objetivo.ORIGEN else '-d'
+            redes = []
+            for item in self.clase.redes:
+                redes.append(str(item.cidr))
+            flags = {flag: ",".join(set(redes))}
+        return flags
+
+    def puertos_flags(self):
+        '''
+        Obtiene los flags para que coincida los puertos de la clase.
+        '''
+        flags = {}
+        if self.clase and  len(self.clase.puertos) > 0:
+            flag = '--sport' if self.tipo == Objetivo.ORIGEN else '--dport'
+            puertos = []
+            protocolos = []
+            for item in self.clase.puertos:
+                puertos.append(str(item.puerto.numero))
+                protocolos.append(str(item.puerto.protocolo))
+            flags = {
+                flag: ",".join(set(puertos)),
+                '-p': ",".join(set(protocolos))
+            }
+        return flags
 
 
     class Meta:

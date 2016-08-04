@@ -128,7 +128,8 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert flags['-s'] == '192.168.1.0/24,192.168.2.0/24'
+            assert '192.168.1.0/24' in flags['-s']
+            assert '192.168.2.0/24' in flags['-s']
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -138,7 +139,8 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert flags['-d'] == '192.168.1.0/24,192.168.2.0/24'
+            assert '192.168.1.0/24' in flags['-d']
+            assert '192.168.2.0/24' in flags['-d']
 
             transaction.rollback()
 
@@ -197,13 +199,77 @@ class DespachanteTests(unittest.TestCase):
 
             transaction.rollback()
 
-    @unittest.skip("no implementado")
     def test_flags_objetivo_redes_puertos(self):
         '''
         Prueba obtener los flags de un objetivo que defina una clase de trafico
         que define redes y puertos
         '''
-        pass
+        # creo transaccion para descartar cambios generados en la base
+        with models.db.atomic() as transaction:
+            # preparo datos
+            clase = models.ClaseTrafico.create(
+                id_clase=60606060,
+                nombre='foo',
+                descripcion='bar',
+            )
+            cidr = [
+                models.CIDR.create(
+                    direccion='192.168.1.0',
+                    prefijo=24,
+                ),
+                models.CIDR.create(
+                    direccion='192.168.2.0',
+                    prefijo=24,
+                )
+            ]
+            puertos = [
+                models.Puerto.create(
+                    numero=53,
+                    protocolo=17,
+                ),
+                models.Puerto.create(
+                    numero=22,
+                    protocolo=6,
+                )
+            ]
+            for item in cidr:
+                models.ClaseCIDR.create(clase=clase, cidr=item,
+                                        grupo=models.OUTSIDE)
+            for item in puertos:
+                models.ClasePuerto.create(clase=clase, puerto=item,
+                                          grupo=models.OUTSIDE)
+
+            # creo objetivo como origen
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.ORIGEN
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert '192.168.1.0/24' in flags['-s']
+            assert '192.168.2.0/24' in flags['-s']
+            assert '53' in flags['--sport']
+            assert '22' in flags['--sport']
+            assert '6' in flags['-p']
+            assert '17' in flags['-p']
+
+            # creo objetivo como destino
+            objetivo = models.Objetivo(
+                clase=clase,
+                tipo=models.Objetivo.DESTINO
+            )
+            # llamo metodo a probar
+            flags = objetivo.flags()
+            # verifico que todo este bien
+            assert '192.168.1.0/24' in flags['-d']
+            assert '192.168.2.0/24' in flags['-d']
+            assert '53' in flags['--dport']
+            assert '22' in flags['--dport']
+            assert '6' in flags['-p']
+            assert '17' in flags['-p']
+
+            transaction.rollback()
 
     @unittest.skip("no implementado")
     def test_flags_politica(self):
