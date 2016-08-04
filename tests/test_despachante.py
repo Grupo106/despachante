@@ -5,6 +5,7 @@ Pruebas del despachante de clases de trafico.
 import unittest
 
 from netcop.despachante import models, config
+from netcop.despachante.models import Flag
 
 
 class DespachanteTests(unittest.TestCase):
@@ -80,8 +81,8 @@ class DespachanteTests(unittest.TestCase):
         # llamo metodo a probar
         flags = objetivo.flags()
         # verifico que todo este bien
-        assert flags['-m'] == 'mac'
-        assert flags['--mac-source'] == '00:00:00:00:00:01'
+        assert flags[Flag.MATCH] == 'mac'
+        assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:01'
         # preparo datos, debe ignorar que se especifico como destino
         objetivo = models.Objetivo(
             direccion_fisica='00:00:00:00:00:02',
@@ -90,8 +91,8 @@ class DespachanteTests(unittest.TestCase):
         # llamo metodo a probar
         flags = objetivo.flags()
         # verifico que todo este bien
-        assert flags['-m'] == 'mac'
-        assert flags['--mac-source'] == '00:00:00:00:00:02'
+        assert flags[Flag.MATCH] == 'mac'
+        assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:02'
 
     def test_flags_objetivo_redes(self):
         '''
@@ -128,8 +129,8 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags['-s']
-            assert '192.168.2.0/24' in flags['-s']
+            assert '192.168.1.0/24' in flags[Flag.IP_ORIGEN]
+            assert '192.168.2.0/24' in flags[Flag.IP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -139,8 +140,8 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags['-d']
-            assert '192.168.2.0/24' in flags['-d']
+            assert '192.168.1.0/24' in flags[Flag.IP_DESTINO]
+            assert '192.168.2.0/24' in flags[Flag.IP_DESTINO]
 
             transaction.rollback()
 
@@ -179,10 +180,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '53' in flags['--sport']
-            assert '22' in flags['--sport']
-            assert '6' in flags['-p']
-            assert '17' in flags['-p']
+            assert '53' in flags[Flag.PUERTO_ORIGEN]
+            assert '22' in flags[Flag.PUERTO_ORIGEN]
+            assert '6' in flags[Flag.PROTOCOLO]
+            assert '17' in flags[Flag.PROTOCOLO]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -192,10 +193,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '53' in flags['--dport']
-            assert '22' in flags['--dport']
-            assert '6' in flags['-p']
-            assert '17' in flags['-p']
+            assert '53' in flags[Flag.PUERTO_DESTINO]
+            assert '22' in flags[Flag.PUERTO_DESTINO]
+            assert '6' in flags[Flag.PROTOCOLO]
+            assert '17' in flags[Flag.PROTOCOLO]
 
             transaction.rollback()
 
@@ -247,12 +248,12 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags['-s']
-            assert '192.168.2.0/24' in flags['-s']
-            assert '53' in flags['--sport']
-            assert '22' in flags['--sport']
-            assert '6' in flags['-p']
-            assert '17' in flags['-p']
+            assert '192.168.1.0/24' in flags[Flag.IP_ORIGEN]
+            assert '192.168.2.0/24' in flags[Flag.IP_ORIGEN]
+            assert '53' in flags[Flag.PUERTO_ORIGEN]
+            assert '22' in flags[Flag.PUERTO_ORIGEN]
+            assert '6' in flags[Flag.PROTOCOLO]
+            assert '17' in flags[Flag.PROTOCOLO]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -262,12 +263,12 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             flags = objetivo.flags()
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags['-d']
-            assert '192.168.2.0/24' in flags['-d']
-            assert '53' in flags['--dport']
-            assert '22' in flags['--dport']
-            assert '6' in flags['-p']
-            assert '17' in flags['-p']
+            assert '192.168.1.0/24' in flags[Flag.IP_DESTINO]
+            assert '192.168.2.0/24' in flags[Flag.IP_DESTINO]
+            assert '53' in flags[Flag.PUERTO_DESTINO]
+            assert '22' in flags[Flag.PUERTO_DESTINO]
+            assert '6' in flags[Flag.PROTOCOLO]
+            assert '17' in flags[Flag.PROTOCOLO]
 
             transaction.rollback()
 

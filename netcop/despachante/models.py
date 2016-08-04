@@ -20,6 +20,18 @@ db = models.PostgresqlDatabase(config.BD_DATABASE,
                                user=config.BD_USER,
                                password=config.BD_PASSWORD)
 
+class Flag:
+    '''
+    Declara flags que utiliza iptables.
+    '''
+    IP_ORIGEN = '--source'
+    IP_DESTINO = '--destination'
+    PUERTO_ORIGEN = '--source-port'
+    PUERTO_DESTINO = '--destination-port'
+    MAC_ORIGEN = '--mac-source'
+    MATCH = '--match'
+    PROTOCOLO = '--protocol'
+
 
 class ClaseTrafico(models.Model):
     '''
@@ -197,8 +209,8 @@ class Objetivo(models.Model):
         flags = dict()
         if self.direccion_fisica is not None:
             flags.update ({
-                '-m': 'mac',
-                '--mac-source': self.direccion_fisica   
+                Flag.MATCH: 'mac',
+                Flag.MAC_ORIGEN: self.direccion_fisica   
             })
         if self.clase is not None:
             flags.update(self.subredes_flags())
@@ -211,7 +223,8 @@ class Objetivo(models.Model):
         '''
         flags = dict()
         if self.clase and self.clase.redes.count() > 0:
-            flag = '-s' if self.tipo == Objetivo.ORIGEN else '-d'
+            flag = (Flag.IP_ORIGEN if self.tipo == Objetivo.ORIGEN else
+                    Flag.IP_DESTINO)
             redes = set()
             for item in self.clase.redes:
                 redes.add(str(item.cidr))
@@ -224,7 +237,8 @@ class Objetivo(models.Model):
         '''
         flags = dict()
         if self.clase and self.clase.puertos.count() > 0:
-            flag = '--sport' if self.tipo == Objetivo.ORIGEN else '--dport'
+            flag = (Flag.PUERTO_ORIGEN if self.tipo == Objetivo.ORIGEN else
+                    Flag.PUERTO_DESTINO)
             puertos = set()
             protocolos = set()
             for item in self.clase.puertos:
@@ -232,7 +246,7 @@ class Objetivo(models.Model):
                 protocolos.add(str(item.puerto.protocolo))
             flags = {
                 flag: ",".join(puertos),
-                '-p': ",".join(protocolos)
+                Flag.PROTOCOLO: ",".join(protocolos)
             }
         return flags
 
