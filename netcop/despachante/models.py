@@ -29,7 +29,8 @@ class Flag:
     PUERTO_ORIGEN = '--source-port'
     PUERTO_DESTINO = '--destination-port'
     MAC_ORIGEN = '--mac-source'
-    MATCH = '--match'
+    EXTENSION_MAC = '-m mac'
+    EXTENSION_MULTIPORT = '-m multiport'
     PROTOCOLO = '--protocol'
 
 
@@ -208,14 +209,20 @@ class Objetivo(models.Model):
         '''
         flags = dict()
         if self.direccion_fisica is not None:
-            flags.update ({
-                Flag.MATCH: 'mac',
-                Flag.MAC_ORIGEN: self.direccion_fisica   
-            })
+            flags.update(self.mac_flags())
         if self.clase is not None:
             flags.update(self.subredes_flags())
             flags.update(self.puertos_flags())
         return flags
+
+    def mac_flags(self):
+        '''
+        Obtiene los flags para que coincida la direccion fisica.
+        '''
+        return {
+            Flag.EXTENSION_MAC: '',
+            Flag.MAC_ORIGEN: self.direccion_fisica   
+        } if self.direccion_fisica else {}
 
     def subredes_flags(self):
         '''
@@ -228,15 +235,15 @@ class Objetivo(models.Model):
             redes = set()
             for item in self.clase.redes:
                 redes.add(str(item.cidr))
-            flags = {flag: ",".join(redes)}
+            flags.update({flag: ",".join(redes)})
         return flags
 
     def puertos_flags(self):
         '''
         Obtiene los flags para que coincida los puertos de la clase.
         '''
-        # FIXME: Multiport!!!
-        flags = dict()
+        # FIXME: Multiples protocolos!
+        flags = {Flag.EXTENSION_MULTIPORT: ''}
         if self.clase and self.clase.puertos.count() > 0:
             flag = (Flag.PUERTO_ORIGEN if self.tipo == Objetivo.ORIGEN else
                     Flag.PUERTO_DESTINO)
@@ -245,10 +252,10 @@ class Objetivo(models.Model):
             for item in self.clase.puertos:
                 puertos.add(str(item.puerto.numero))
                 protocolos.add(str(item.puerto.protocolo))
-            flags = {
+            flags.update({
                 flag: ",".join(puertos),
                 Flag.PROTOCOLO: ",".join(protocolos)
-            }
+            })
         return flags
 
 

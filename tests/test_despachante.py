@@ -81,7 +81,7 @@ class DespachanteTests(unittest.TestCase):
         # llamo metodo a probar
         flags = objetivo.flags()
         # verifico que todo este bien
-        assert flags[Flag.MATCH] == 'mac'
+        assert Flag.EXTENSION_MAC in flags
         assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:01'
         # preparo datos, debe ignorar que se especifico como destino
         objetivo = models.Objetivo(
@@ -91,8 +91,8 @@ class DespachanteTests(unittest.TestCase):
         # llamo metodo a probar
         flags = objetivo.flags()
         # verifico que todo este bien
-        assert flags[Flag.MATCH] == 'mac'
         assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:02'
+        assert Flag.EXTENSION_MAC in flags
 
     def test_flags_objetivo_redes(self):
         '''
@@ -184,6 +184,7 @@ class DespachanteTests(unittest.TestCase):
             assert '22' in flags[Flag.PUERTO_ORIGEN]
             assert '6' in flags[Flag.PROTOCOLO]
             assert '17' in flags[Flag.PROTOCOLO]
+            assert Flag.EXTENSION_MULTIPORT in flags
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -197,6 +198,7 @@ class DespachanteTests(unittest.TestCase):
             assert '22' in flags[Flag.PUERTO_DESTINO]
             assert '6' in flags[Flag.PROTOCOLO]
             assert '17' in flags[Flag.PROTOCOLO]
+            assert Flag.EXTENSION_MULTIPORT in flags
 
             transaction.rollback()
 
@@ -254,6 +256,7 @@ class DespachanteTests(unittest.TestCase):
             assert '22' in flags[Flag.PUERTO_ORIGEN]
             assert '6' in flags[Flag.PROTOCOLO]
             assert '17' in flags[Flag.PROTOCOLO]
+            assert Flag.EXTENSION_MULTIPORT in flags
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -269,6 +272,7 @@ class DespachanteTests(unittest.TestCase):
             assert '22' in flags[Flag.PUERTO_DESTINO]
             assert '6' in flags[Flag.PROTOCOLO]
             assert '17' in flags[Flag.PROTOCOLO]
+            assert Flag.EXTENSION_MULTIPORT in flags
 
             transaction.rollback()
 
