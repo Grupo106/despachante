@@ -210,7 +210,8 @@ class Politica(models.Model):
             lista = list()
             for mac in params[Param.MAC]:
                 flags = {Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
-                flags.update(self.flags_puerto())
+                for flag in self.flags_puerto():
+                    flags.update(flag)
                 lista.append(flags)
             return lista
         else:
