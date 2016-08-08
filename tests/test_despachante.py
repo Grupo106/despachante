@@ -306,11 +306,36 @@ class DespachanteTests(unittest.TestCase):
             Param.TCP_DESTINO: [22],
             Param.UDP_DESTINO: [53]
         })
+        # Pruebo solo objetivo ip
+        politica = models.Politica()
+        politica.objetivos = [objetivo_ip]
+        flags = politica.flags()
+        assert len(flags) == 1
+        for item in flags:
+            assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
+            assert '192.168.1.0/24' in item[Flag.IP_DESTINO]
+            assert Flag.EXTENSION_MULTIPORT not in item
+            assert Flag.PROTOCOLO not in item
+            assert Flag.PUERTO_ORIGEN not in item
+            assert Flag.PUERTO_DESTINO not in item
+        # Pruebo solo objetivo puerto
+        politica = models.Politica()
+        politica.objetivos = [objetivo_puerto]
+        flags = politica.flags()
+        assert len(flags) == 2
+        for item in flags:
+            assert Flag.IP_DESTINO not in item
+            assert Flag.EXTENSION_MULTIPORT in item
+            if item[Flag.PROTOCOLO] == 'tcp':
+                assert '22' in item[Flag.PUERTO_DESTINO]
+                assert '53' not in item[Flag.PUERTO_DESTINO]
+            if item[Flag.PROTOCOLO] == 'udp':
+                assert '22' not in item[Flag.PUERTO_DESTINO]
+                assert '53' in item[Flag.PUERTO_DESTINO]
+        # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
-        # llamo metodo
         flags = politica.flags()
-        # verifico que todo este bien
         assert len(flags) == 2
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_DESTINO]

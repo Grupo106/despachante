@@ -200,31 +200,46 @@ class Politica(models.Model):
         for objetivo in self.objetivos:
             objetivo.obtener_parametros(self.parametros)
 
-        for flags in self.flags_puerto():
+        for flags in self.flags_mac():
             lista.append(flags)
         return lista
 
+    def flags_mac(self):
+        params = self.parametros
+        if params[Param.MAC]:
+            lista = list()
+            for mac in params[Param.MAC]:
+                flags = {Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
+                flags.update(self.flags_puerto())
+                lista.append(flags)
+            return lista
+        else:
+            return self.flags_puerto()
 
     def flags_puerto(self):
         params = self.parametros
-        lista = list()
-        if params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO]:
-            flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'tcp'}
-            if params[Param.TCP_ORIGEN]:
-                flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.TCP_ORIGEN])
-            if params[Param.TCP_DESTINO]:
-                flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.TCP_DESTINO])
-            flags.update(self.flags_redes())
-            lista.append(flags)
-        if params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]:
-            flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'udp'}
-            if params[Param.UDP_ORIGEN]:
-                flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.UDP_ORIGEN])
-            if params[Param.UDP_DESTINO]:
-                flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.UDP_DESTINO])
-            flags.update(self.flags_redes())
-            lista.append(flags)
-        return lista
+        if (params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO] or
+                params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]):
+            lista = list()
+            if params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO]:
+                flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'tcp'}
+                if params[Param.TCP_ORIGEN]:
+                    flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.TCP_ORIGEN])
+                if params[Param.TCP_DESTINO]:
+                    flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.TCP_DESTINO])
+                flags.update(self.flags_redes())
+                lista.append(flags)
+            if params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]:
+                flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'udp'}
+                if params[Param.UDP_ORIGEN]:
+                    flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.UDP_ORIGEN])
+                if params[Param.UDP_DESTINO]:
+                    flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.UDP_DESTINO])
+                flags.update(self.flags_redes())
+                lista.append(flags)
+            return lista
+        else:
+            return [self.flags_redes()]
 
     def flags_redes(self):
         flags = dict()
