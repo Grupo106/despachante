@@ -171,7 +171,7 @@ class ClasePuerto(models.Model):
 class Politica(models.Model):
     '''
     Define una regla sobre el trafico creada por el usuario.
-    ''' 
+    '''
     id_politica = models.PrimaryKeyField()
     nombre = models.CharField(max_length=63)
     descripcion = models.CharField(max_length=255, null=True)
@@ -179,13 +179,61 @@ class Politica(models.Model):
     prioridad = models.SmallIntegerField(null=True)
     velocidad_maxima = models.IntegerField(null=True)
 
+    def __init__(self, *args, **kwargs):
+        '''
+        Inicializa diccionario de parametros.
+        '''
+        self.parametros = {
+            getattr(Param, attr): set()
+            for attr in dir(Param) if not attr.startswith('__')
+        }
+        return super(Politica, self).__init__(*args, **kwargs)
+
+
     def flags(self):
         '''
         Devuelve una lista de diccionarios con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
         política.
         '''
-        return []
+        lista = list()
+        for objetivo in self.objetivos:
+            objetivo.obtener_parametros(self.parametros)
+
+        for flags in self.flags_puerto():
+            lista.append(flags)
+        return lista
+
+
+    def flags_puerto(self):
+        params = self.parametros
+        lista = list()
+        if params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO]:
+            flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'tcp'}
+            if params[Param.TCP_ORIGEN]:
+                flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.TCP_ORIGEN])
+            if params[Param.TCP_DESTINO]:
+                flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.TCP_DESTINO])
+            flags.update(self.flags_redes())
+            lista.append(flags)
+        if params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]:
+            flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'udp'}
+            if params[Param.UDP_ORIGEN]:
+                flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.UDP_ORIGEN])
+            if params[Param.UDP_DESTINO]:
+                flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.UDP_DESTINO])
+            flags.update(self.flags_redes())
+            lista.append(flags)
+        return lista
+
+    def flags_redes(self):
+        flags = dict()
+        params = self.parametros
+        if params[Param.IP_ORIGEN]:
+            flags[Flag.IP_ORIGEN] = ",".join(params[Param.IP_ORIGEN])
+        if params[Param.IP_DESTINO]:
+            flags[Flag.IP_DESTINO] = ",".join(params[Param.IP_DESTINO])
+        return flags
 
     @property
     def origenes(self):
@@ -212,7 +260,7 @@ class Politica(models.Model):
 class Objetivo(models.Model):
     '''
     Especifica los objetivos a los que se les va a aplicar la politica.
-    ''' 
+    '''
     ORIGEN = 'o'
     DESTINO = 'd'
 
@@ -289,9 +337,9 @@ class RangoHorario(models.Model):
     Atributos
     ----------
         * dia: Dia de la semana, entre 0 y 6 siendo 0 el dia domingo y 6 sabado
-        * hora_inicial: Hora de inicio del rango valido 
-        * hora_fin: Hora de fin del rango valido 
-    ''' 
+        * hora_inicial: Hora de inicio del rango valido
+        * hora_fin: Hora de fin del rango valido
+    '''
     id_rango_horario = models.PrimaryKeyField()
     politica = models.ForeignKeyField(Politica, related_name='horarios',
                                       db_column='id_politica')

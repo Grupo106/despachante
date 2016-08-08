@@ -3,7 +3,8 @@
 Pruebas del despachante de clases de trafico.
 '''
 import unittest
-from mock import Mock
+import mock
+from mock import Mock, MagicMock
 
 from netcop.despachante import models, config
 from netcop.despachante.models import Flag, Param
@@ -193,10 +194,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert 53 in p[Param.UDP_ORIGEN] 
-            assert 22 in p[Param.TCP_ORIGEN] 
-            assert 80 in p[Param.UDP_ORIGEN] 
-            assert 80 in p[Param.TCP_ORIGEN] 
+            assert 53 in p[Param.UDP_ORIGEN]
+            assert 22 in p[Param.TCP_ORIGEN]
+            assert 80 in p[Param.UDP_ORIGEN]
+            assert 80 in p[Param.TCP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -206,10 +207,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert 53 in p[Param.UDP_DESTINO] 
-            assert 22 in p[Param.TCP_DESTINO] 
-            assert 80 in p[Param.UDP_DESTINO] 
-            assert 80 in p[Param.TCP_DESTINO] 
+            assert 53 in p[Param.UDP_DESTINO]
+            assert 22 in p[Param.TCP_DESTINO]
+            assert 80 in p[Param.UDP_DESTINO]
+            assert 80 in p[Param.TCP_DESTINO]
 
             transaction.rollback()
 
@@ -290,13 +291,37 @@ class DespachanteTests(unittest.TestCase):
 
             transaction.rollback()
 
-    @unittest.skip("NO IMPLEMENTADO")
     def test_flags_politica_restriccion_destino(self):
         '''
         Prueba obtener los flags de una politica de restriccion que solo defina
         objetivos como destino.
         '''
-        pass
+        # preparo datos
+        objetivo_ip = Mock()
+        objetivo_ip.obtener_parametros = lambda x: x.update({
+            Param.IP_DESTINO: ['192.168.0.0/24', '192.168.1.0/24'],
+        })
+        objetivo_puerto = Mock()
+        objetivo_puerto.obtener_parametros = lambda x: x.update({
+            Param.TCP_DESTINO: [22],
+            Param.UDP_DESTINO: [53]
+        })
+        politica = models.Politica()
+        politica.objetivos = [objetivo_ip, objetivo_puerto]
+        # llamo metodo
+        flags = politica.flags()
+        # verifico que todo este bien
+        assert len(flags) == 2
+        for item in flags:
+            assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
+            assert '192.168.1.0/24' in item[Flag.IP_DESTINO]
+            assert Flag.EXTENSION_MULTIPORT in item
+            if item[Flag.PROTOCOLO] == 'tcp':
+                assert '22' in item[Flag.PUERTO_DESTINO]
+                assert '53' not in item[Flag.PUERTO_DESTINO]
+            if item[Flag.PROTOCOLO] == 'udp':
+                assert '22' not in item[Flag.PUERTO_DESTINO]
+                assert '53' in item[Flag.PUERTO_DESTINO]
 
     @unittest.skip("NO IMPLEMENTADO")
     def test_flags_politica_restriccion_origen(self):
