@@ -3,9 +3,10 @@
 Pruebas del despachante de clases de trafico.
 '''
 import unittest
+from mock import Mock
 
 from netcop.despachante import models, config
-from netcop.despachante.models import Flag
+from netcop.despachante.models import Flag, Param
 
 
 class DespachanteTests(unittest.TestCase):
@@ -78,21 +79,20 @@ class DespachanteTests(unittest.TestCase):
             direccion_fisica='00:00:00:00:00:01',
             tipo=models.Objetivo.ORIGEN
         )
+        p = {Param.MAC: set()}
         # llamo metodo a probar
-        flags = objetivo.flags()
+        flags = objetivo.obtener_parametros(p)
         # verifico que todo este bien
-        assert Flag.EXTENSION_MAC in flags
-        assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:01'
+        assert '00:00:00:00:00:01' in p[Param.MAC]
         # preparo datos, debe ignorar que se especifico como destino
         objetivo = models.Objetivo(
             direccion_fisica='00:00:00:00:00:02',
             tipo=models.Objetivo.DESTINO
         )
         # llamo metodo a probar
-        flags = objetivo.flags()
+        flags = objetivo.obtener_parametros(p)
         # verifico que todo este bien
-        assert flags[Flag.MAC_ORIGEN] == '00:00:00:00:00:02'
-        assert Flag.EXTENSION_MAC in flags
+        assert '00:00:00:00:00:02' in p[Param.MAC]
 
     def test_flags_objetivo_redes(self):
         '''
@@ -120,6 +120,8 @@ class DespachanteTests(unittest.TestCase):
             for red in cidr:
                 models.ClaseCIDR.create(clase=clase, cidr=red,
                                         grupo=models.OUTSIDE)
+            p = {Param.IP_ORIGEN: set(),
+                 Param.IP_DESTINO: set()}
 
             # creo objetivo como origen
             objetivo = models.Objetivo(
@@ -127,10 +129,10 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.ORIGEN
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            flags = objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags[Flag.IP_ORIGEN]
-            assert '192.168.2.0/24' in flags[Flag.IP_ORIGEN]
+            assert '192.168.1.0/24' in p[Param.IP_ORIGEN]
+            assert '192.168.2.0/24' in p[Param.IP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -138,10 +140,10 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.DESTINO
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            flags = objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags[Flag.IP_DESTINO]
-            assert '192.168.2.0/24' in flags[Flag.IP_DESTINO]
+            assert '192.168.1.0/24' in p[Param.IP_DESTINO]
+            assert '192.168.2.0/24' in p[Param.IP_DESTINO]
 
             transaction.rollback()
 
@@ -166,11 +168,22 @@ class DespachanteTests(unittest.TestCase):
                 models.Puerto.create(
                     numero=22,
                     protocolo=6,
+                ),
+                models.Puerto.create(
+                    numero=80,
+                    protocolo=0,
                 )
             ]
             for item in puertos:
                 models.ClasePuerto.create(clase=clase, puerto=item,
                                           grupo=models.OUTSIDE)
+
+            p = {
+                Param.TCP_ORIGEN: set(),
+                Param.TCP_DESTINO: set(),
+                Param.UDP_ORIGEN: set(),
+                Param.UDP_DESTINO: set(),
+            }
 
             # creo objetivo como origen
             objetivo = models.Objetivo(
@@ -178,13 +191,12 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.ORIGEN
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '53' in flags[Flag.PUERTO_ORIGEN]
-            assert '22' in flags[Flag.PUERTO_ORIGEN]
-            assert '6' in flags[Flag.PROTOCOLO]
-            assert '17' in flags[Flag.PROTOCOLO]
-            assert Flag.EXTENSION_MULTIPORT in flags
+            assert 53 in p[Param.UDP_ORIGEN] 
+            assert 22 in p[Param.TCP_ORIGEN] 
+            assert 80 in p[Param.UDP_ORIGEN] 
+            assert 80 in p[Param.TCP_ORIGEN] 
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -192,13 +204,12 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.DESTINO
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '53' in flags[Flag.PUERTO_DESTINO]
-            assert '22' in flags[Flag.PUERTO_DESTINO]
-            assert '6' in flags[Flag.PROTOCOLO]
-            assert '17' in flags[Flag.PROTOCOLO]
-            assert Flag.EXTENSION_MULTIPORT in flags
+            assert 53 in p[Param.UDP_DESTINO] 
+            assert 22 in p[Param.TCP_DESTINO] 
+            assert 80 in p[Param.UDP_DESTINO] 
+            assert 80 in p[Param.TCP_DESTINO] 
 
             transaction.rollback()
 
@@ -242,21 +253,27 @@ class DespachanteTests(unittest.TestCase):
                 models.ClasePuerto.create(clase=clase, puerto=item,
                                           grupo=models.OUTSIDE)
 
+            p = {
+                Param.IP_ORIGEN: set(),
+                Param.IP_DESTINO: set(),
+                Param.TCP_ORIGEN: set(),
+                Param.TCP_DESTINO: set(),
+                Param.UDP_ORIGEN: set(),
+                Param.UDP_DESTINO: set(),
+            }
+
             # creo objetivo como origen
             objetivo = models.Objetivo(
                 clase=clase,
                 tipo=models.Objetivo.ORIGEN
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags[Flag.IP_ORIGEN]
-            assert '192.168.2.0/24' in flags[Flag.IP_ORIGEN]
-            assert '53' in flags[Flag.PUERTO_ORIGEN]
-            assert '22' in flags[Flag.PUERTO_ORIGEN]
-            assert '6' in flags[Flag.PROTOCOLO]
-            assert '17' in flags[Flag.PROTOCOLO]
-            assert Flag.EXTENSION_MULTIPORT in flags
+            assert '192.168.1.0/24' in p[Param.IP_ORIGEN]
+            assert '192.168.2.0/24' in p[Param.IP_ORIGEN]
+            assert 53 in p[Param.UDP_ORIGEN]
+            assert 22 in p[Param.TCP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -264,15 +281,12 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.DESTINO
             )
             # llamo metodo a probar
-            flags = objetivo.flags()
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in flags[Flag.IP_DESTINO]
-            assert '192.168.2.0/24' in flags[Flag.IP_DESTINO]
-            assert '53' in flags[Flag.PUERTO_DESTINO]
-            assert '22' in flags[Flag.PUERTO_DESTINO]
-            assert '6' in flags[Flag.PROTOCOLO]
-            assert '17' in flags[Flag.PROTOCOLO]
-            assert Flag.EXTENSION_MULTIPORT in flags
+            assert '192.168.1.0/24' in p[Param.IP_DESTINO]
+            assert '192.168.2.0/24' in p[Param.IP_DESTINO]
+            assert 53 in p[Param.UDP_DESTINO]
+            assert 22 in p[Param.TCP_DESTINO]
 
             transaction.rollback()
 
