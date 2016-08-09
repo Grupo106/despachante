@@ -31,7 +31,15 @@ class Flag:
     MAC_ORIGEN = '--mac-source'
     EXTENSION_MAC = '-m mac'
     EXTENSION_MULTIPORT = '-m multiport'
-    PROTOCOLO = '--protocol'
+    PROTOCOLO = '-p'
+    PRIORIDAD = (EXTENSION_MAC,
+                 EXTENSION_MULTIPORT,
+                 PROTOCOLO,
+                 MAC_ORIGEN,
+                 IP_ORIGEN,
+                 IP_DESTINO,
+                 PUERTO_ORIGEN,
+                 PUERTO_DESTINO)
 
 
 class Param:
@@ -204,6 +212,23 @@ class Politica(models.Model):
                 self.flags_redes(list())
             )
         )
+
+    def flags_str(self):
+        '''
+        Devuelve una lista de string con los flags necesarios para
+        configurar el iptables para que capture los hosts definidos en la
+        política.
+        '''
+        lista = list()
+        for flags in self.flags():
+            linea = list()
+            for key in Flag.PRIORIDAD:
+                value = flags.get(key)
+                if value is not None:
+                    linea.append("%s %s" % (key, value))
+            lista.append(" ".join(linea))
+        return lista
+
 
     def flags_mac(self, lista):
         params = self.parametros

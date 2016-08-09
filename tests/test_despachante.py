@@ -8,6 +8,7 @@ from mock import Mock, MagicMock
 
 from netcop.despachante import models, config
 from netcop.despachante.models import Flag, Param
+from jinja2 import Environment, PackageLoader
 
 
 class DespachanteTests(unittest.TestCase):
@@ -522,3 +523,31 @@ class DespachanteTests(unittest.TestCase):
         # verifico que haya 2 tcp y 2 udp
         assert tcp == 2
         assert udp == 2
+
+    def test_template_restriccion(self):
+        '''
+        Prueba la generacion del template de restriccion.
+        '''
+        # preparo datos
+        objetivo_mac = Mock()
+        objetivo_mac.obtener_parametros = lambda x: x.update({
+            Param.MAC: ['10:00:00:00:00:00', '20:00:00:00:00:00']
+        })
+        objetivo_ip = Mock()
+        objetivo_ip.obtener_parametros = lambda x: x.update({
+            Param.IP_ORIGEN: ['192.168.0.0/24', '192.168.1.0/24'],
+            Param.IP_DESTINO: ['172.16.0.0/24', '172.16.1.0/24'],
+        })
+        objetivo_puerto = Mock()
+        objetivo_puerto.obtener_parametros = lambda x: x.update({
+            Param.TCP_ORIGEN: [22],
+            Param.UDP_ORIGEN: [53],
+            Param.TCP_DESTINO: [80, 443],
+            Param.UDP_DESTINO: [137],
+        })
+        # Pruebo objetivo mac, ip y puerto
+        politica = models.Politica()
+        politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        env = Environment(loader=PackageLoader('netcop.despachante'))
+        template = env.get_template("restriccion.j2")
+        print template.render(politicas=[politica])

@@ -9,17 +9,8 @@
  Netcop 2016. Universidad Nacional de la Matanza
 #}
 
-{# Si la politica tiene objetivos de origen y destino #}
-{% if politica.origenes %}
-  {% for origen in politica.origenes %}
-    {% for destino in politica.destinos %}
-      {# objetivo define redes #}
-      iptables -A FORWARD -s {{ origen.clase.redes|join(',') }} -d {{ destino.clase.redes|join(',') }} -j DROP
-    {% endfor %}
+{% for politica in politicas %}
+  {% for flags in politica.flags_str() %}
+    iptables -A INPUT {{ flags }} -j DROP
   {% endfor %}
-
-{# Si la politica solo tiene objetivos de destino #}
-{% else %}
-  {% for objetivo in politica.destinos %}
-  {% endfor %}
-{% endif %}
+{% endfor %}
