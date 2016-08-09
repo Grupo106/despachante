@@ -25,50 +25,6 @@ class DespachanteTests(unittest.TestCase):
             ],
             safe=True)
 
-    def test_origenes(self):
-        '''
-        Prueba obtener los hosts de origen de una politica.
-        '''
-        # creo transaccion para descartar cambios generados en la base
-        with models.db.atomic() as transaction:
-            # preparo datos
-            politica = models.Politica.create(nombre='foo')
-            models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
-                                   politica=politica,
-                                   tipo=models.Objetivo.ORIGEN)
-            models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
-                                   politica=politica,
-                                   tipo=models.Objetivo.DESTINO)
-            # llamo metodo a probar
-            lista = politica.origenes
-            # verifico que todo este bien
-            assert len(lista) == 1
-            assert lista[0].direccion_fisica == '00:00:00:00:00:01'
-            # descarto cambios en la base de datos
-            transaction.rollback()
-
-    def test_destinos(self):
-        '''
-        Prueba obtener los hosts de destino de una politica.
-        '''
-        # creo transaccion para descartar cambios generados en la base
-        with models.db.atomic() as transaction:
-            # preparo datos
-            politica = models.Politica.create(nombre='foo')
-            models.Objetivo.create(direccion_fisica='00:00:00:00:00:01',
-                                   politica=politica,
-                                   tipo=models.Objetivo.ORIGEN)
-            models.Objetivo.create(direccion_fisica='00:00:00:00:00:02',
-                                   politica=politica,
-                                   tipo=models.Objetivo.DESTINO)
-            # llamo metodo a probar
-            lista = politica.destinos
-            # verifico que todo este bien
-            assert len(lista) == 1
-            assert lista[0].direccion_fisica == '00:00:00:00:00:02'
-            # descarto cambios en la base de datos
-            transaction.rollback()
-
     def test_flags_objetivo_mac(self):
         '''
         Prueba obtener los flags de un objetivo que defina una mac address.
@@ -349,7 +305,6 @@ class DespachanteTests(unittest.TestCase):
                 assert '22' not in item[Flag.PUERTO_DESTINO]
                 assert '53' in item[Flag.PUERTO_DESTINO]
 
-    @unittest.skip("arreglar")
     def test_flags_politica_restriccion_origen(self):
         '''
         Prueba obtener los flags de una politica de restriccion que solo defina
@@ -432,7 +387,6 @@ class DespachanteTests(unittest.TestCase):
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         flags = politica.flags()
-        print flags
         assert len(flags) == 4
         for item in flags:
             if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
@@ -451,58 +405,120 @@ class DespachanteTests(unittest.TestCase):
                 assert '22' not in item[Flag.PUERTO_ORIGEN]
                 assert '53' in item[Flag.PUERTO_ORIGEN]
 
-    @unittest.skip("NO IMPLEMENTADO")
     def test_flags_politica_restriccion_origen_destino(self):
         '''
         Prueba obtener los flags de una politica de restriccion que solo defina
         objetivos como origen y destino.
         '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_limitacion_destino(self):
-        '''
-        Prueba obtener los flags de una politica de limitacion que solo defina
-        objetivos como destino.
-        '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_limitacion_origen(self):
-        '''
-        Prueba obtener los flags de una politica de limitacion que solo defina
-        objetivos como origen.
-        '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_limitacion_origen_destino(self):
-        '''
-        Prueba obtener los flags de una politica de limitacion que solo defina
-        objetivos como origen y destino.
-        '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_priorizacion_destino(self):
-        '''
-        Prueba obtener los flags de una politica de priorizacion que solo
-        defina objetivos como destino.
-        '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_priorizacion_origen(self):
-        '''
-        Prueba obtener los flags de una politica de priorizacion que solo
-        defina objetivos como origen.
-        '''
-        pass
-
-    @unittest.skip("NO IMPLEMENTADO")
-    def test_flags_politica_priorizacion_origen_destino(self):
-        '''
-        Prueba obtener los flags de una politica de priorizacion que solo
-        defina objetivos como origen y destino.
-        '''
-        pass
+        # preparo datos
+        objetivo_mac = Mock()
+        objetivo_mac.obtener_parametros = lambda x: x.update({
+            Param.MAC: ['10:00:00:00:00:00', '20:00:00:00:00:00']
+        })
+        objetivo_ip = Mock()
+        objetivo_ip.obtener_parametros = lambda x: x.update({
+            Param.IP_ORIGEN: ['192.168.0.0/24', '192.168.1.0/24'],
+            Param.IP_DESTINO: ['172.16.0.0/24', '172.16.1.0/24'],
+        })
+        objetivo_puerto = Mock()
+        objetivo_puerto.obtener_parametros = lambda x: x.update({
+            Param.TCP_ORIGEN: [22],
+            Param.UDP_ORIGEN: [53],
+            Param.TCP_DESTINO: [80, 443],
+            Param.UDP_DESTINO: [137],
+        })
+        # Pruebo solo objetivo ip y mac
+        politica = models.Politica()
+        politica.objetivos = [objetivo_ip, objetivo_mac]
+        flags = politica.flags()
+        assert len(flags) == 2
+        for item in flags:
+            assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
+            assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
+            assert '172.16.0.0/24' in item[Flag.IP_DESTINO]
+            assert '172.16.1.0/24' in item[Flag.IP_DESTINO]
+            if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
+                assert '20:00:00:00:00:00' not in item[Flag.MAC_ORIGEN]
+            elif '20:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
+                assert '10:00:00:00:00:00' not in item[Flag.MAC_ORIGEN]
+            else:
+                assert False
+            assert Flag.EXTENSION_MAC in item
+            assert Flag.PROTOCOLO not in item
+            assert Flag.PUERTO_ORIGEN not in item
+            assert Flag.PUERTO_DESTINO not in item
+        # Pruebo solo objetivo puerto
+        politica = models.Politica()
+        politica.objetivos = [objetivo_puerto]
+        flags = politica.flags()
+        assert len(flags) == 2
+        for item in flags:
+            assert Flag.IP_ORIGEN not in item
+            assert Flag.EXTENSION_MULTIPORT in item
+            if item[Flag.PROTOCOLO] == 'tcp':
+                assert '22' in item[Flag.PUERTO_ORIGEN]
+                assert '80' in item[Flag.PUERTO_DESTINO]
+                assert '443' in item[Flag.PUERTO_DESTINO]
+                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert '137' not in item[Flag.PUERTO_DESTINO]
+            if item[Flag.PROTOCOLO] == 'udp':
+                assert '22' not in item[Flag.PUERTO_ORIGEN]
+                assert '80' not in item[Flag.PUERTO_DESTINO]
+                assert '443' not in item[Flag.PUERTO_DESTINO]
+                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert '137' in item[Flag.PUERTO_DESTINO]
+        # Pruebo objetivo ip y puerto
+        politica = models.Politica()
+        politica.objetivos = [objetivo_ip, objetivo_puerto]
+        flags = politica.flags()
+        assert len(flags) == 2
+        for item in flags:
+            assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
+            assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
+            assert Flag.EXTENSION_MULTIPORT in item
+            if item[Flag.PROTOCOLO] == 'tcp':
+                assert '22' in item[Flag.PUERTO_ORIGEN]
+                assert '443' in item[Flag.PUERTO_DESTINO]
+                assert '80' in item[Flag.PUERTO_DESTINO]
+                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert '137' not in item[Flag.PUERTO_DESTINO]
+            if item[Flag.PROTOCOLO] == 'udp':
+                assert '22' not in item[Flag.PUERTO_ORIGEN]
+                assert '443' not in item[Flag.PUERTO_DESTINO]
+                assert '80' not in item[Flag.PUERTO_DESTINO]
+                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert '137' in item[Flag.PUERTO_DESTINO]
+        # Pruebo objetivo mac, ip y puerto
+        politica = models.Politica()
+        politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        flags = politica.flags()
+        tcp = 0
+        udp = 0
+        assert len(flags) == 4
+        for item in flags:
+            if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
+                assert '20:00:00:00:00:00' not in item[Flag.MAC_ORIGEN]
+            elif '20:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
+                assert '10:00:00:00:00:00' not in item[Flag.MAC_ORIGEN]
+            else:
+                assert False
+            assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
+            assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
+            assert Flag.EXTENSION_MULTIPORT in item
+            if item[Flag.PROTOCOLO] == 'tcp':
+                assert '22' in item[Flag.PUERTO_ORIGEN]
+                assert '443' in item[Flag.PUERTO_DESTINO]
+                assert '80' in item[Flag.PUERTO_DESTINO]
+                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert '137' not in item[Flag.PUERTO_DESTINO]
+                tcp += 1
+            if item[Flag.PROTOCOLO] == 'udp':
+                assert '22' not in item[Flag.PUERTO_ORIGEN]
+                assert '443' not in item[Flag.PUERTO_DESTINO]
+                assert '80' not in item[Flag.PUERTO_DESTINO]
+                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert '137' in item[Flag.PUERTO_DESTINO]
+                udp += 1
+        # verifico que haya 2 tcp y 2 udp
+        assert tcp == 2
+        assert udp == 2

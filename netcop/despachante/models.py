@@ -196,76 +196,87 @@ class Politica(models.Model):
         configurar el iptables para que capture los hosts definidos en la
         política.
         '''
-        lista = list()
         for objetivo in self.objetivos:
             objetivo.obtener_parametros(self.parametros)
 
-        for flags in self.flags_mac():
-            lista.append(flags)
-        return lista
+        return self.flags_mac(
+            self.flags_puerto(
+                self.flags_redes(list())
+            )
+        )
 
-    def flags_mac(self):
+    def flags_mac(self, lista):
         params = self.parametros
-        if params[Param.MAC]:
-            lista = list()
+        if self.hay_macs():
+            ret = list()
             for mac in params[Param.MAC]:
                 flags = {Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
-                for flag in self.flags_puerto():
-                    flags.update(flag)
-                lista.append(flags)
-            return lista
-        else:
-            return self.flags_puerto()
+                if lista:
+                    for item in lista:
+                        ret.append(dict(flags, **item))
+                else:
+                    ret.append(flags)
+            lista = ret
 
-    def flags_puerto(self):
+        return lista
+
+    def flags_puerto(self, lista):
+        PUERTOS = (
+            ('tcp', Param.TCP_ORIGEN, Param.TCP_DESTINO),
+            ('udp', Param.UDP_ORIGEN, Param.UDP_DESTINO),
+        )
         params = self.parametros
-        if (params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO] or
-                params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]):
-            lista = list()
-            if params[Param.TCP_ORIGEN] or params[Param.TCP_DESTINO]:
-                flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'tcp'}
-                if params[Param.TCP_ORIGEN]:
-                    flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.TCP_ORIGEN])
-                if params[Param.TCP_DESTINO]:
-                    flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.TCP_DESTINO])
-                flags.update(self.flags_redes())
-                lista.append(flags)
-            if params[Param.UDP_ORIGEN] or params[Param.UDP_DESTINO]:
-                flags = {Flag.EXTENSION_MULTIPORT: '', Flag.PROTOCOLO: 'udp'}
-                if params[Param.UDP_ORIGEN]:
-                    flags[Flag.PUERTO_ORIGEN] = ",".join(str(x) for x in params[Param.UDP_ORIGEN])
-                if params[Param.UDP_DESTINO]:
-                    flags[Flag.PUERTO_DESTINO] = ",".join(str(x) for x in params[Param.UDP_DESTINO])
-                flags.update(self.flags_redes())
-                lista.append(flags)
-            return lista
-        else:
-            return [self.flags_redes()]
+        if self.hay_puertos():
+            ret = list()
+            for proto, origen, destino in PUERTOS:
+                if params[origen] or params[destino]:
+                    flags = {
+                        Flag.EXTENSION_MULTIPORT: '', 
+                        Flag.PROTOCOLO: proto,
+                    }
+                    if params[origen]:
+                        flags[Flag.PUERTO_ORIGEN] = ",".join(
+                            str(x) for x in params[origen]
+                        )
+                    if params[destino]:
+                        flags[Flag.PUERTO_DESTINO] = ",".join(
+                            str(x) for x in params[destino]
+                        )
+                    if lista:
+                        for item in lista:
+                            ret.append(dict(flags, **item))
+                    else:
+                        ret.append(flags)
+            lista = ret
+        return lista
 
-    def flags_redes(self):
+    def flags_redes(self, lista):
         flags = dict()
         params = self.parametros
-        if params[Param.IP_ORIGEN]:
-            flags[Flag.IP_ORIGEN] = ",".join(params[Param.IP_ORIGEN])
-        if params[Param.IP_DESTINO]:
-            flags[Flag.IP_DESTINO] = ",".join(params[Param.IP_DESTINO])
-        return flags
+        if self.hay_redes():
+            if params[Param.IP_ORIGEN]:
+                flags[Flag.IP_ORIGEN] = ",".join(params[Param.IP_ORIGEN])
+            if params[Param.IP_DESTINO]:
+                flags[Flag.IP_DESTINO] = ",".join(params[Param.IP_DESTINO])
+            if lista:
+                for item in lista:
+                    lista.append(dict(flags, **item))
+            else:
+                lista.append(flags)
+        return lista
 
-    @property
-    def origenes(self):
-        '''
-        Devuelve una lista con todos los objetivos que definen los hosts de
-        origen.
-        '''
-        return self.objetivos.select().where(Objetivo.tipo == Objetivo.ORIGEN)
+    def hay_puertos(self):
+        return (self.parametros[Param.TCP_ORIGEN] or 
+                self.parametros[Param.TCP_DESTINO] or
+                self.parametros[Param.UDP_ORIGEN] or 
+                self.parametros[Param.UDP_DESTINO])
 
-    @property
-    def destinos(self):
-        '''
-        Devuelve una lista con todos los objetivos que definen los hosts de
-        destino.
-        '''
-        return self.objetivos.select().where(Objetivo.tipo == Objetivo.DESTINO)
+    def hay_macs(self):
+        return (self.parametros[Param.MAC])
+
+    def hay_redes(self):
+        return (self.parametros[Param.IP_ORIGEN] or
+                self.parametros[Param.IP_DESTINO])
 
 
     class Meta:
