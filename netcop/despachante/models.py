@@ -6,6 +6,7 @@ Utiliza el paquete *peewee* para el mapeo objeto-relacional. Permite realizar
 las consultas a la base de datos en lenguaje python de forma sencilla sin
 necesidad de escribir codigo SQL.
 '''
+import itertools
 import peewee as models
 from . import config
 
@@ -30,10 +31,8 @@ class Flag:
     PUERTO_DESTINO = '--destination-port'
     MAC_ORIGEN = '--mac-source'
     EXTENSION_MAC = '-m mac'
-    EXTENSION_MULTIPORT = '-m multiport'
     PROTOCOLO = '-p'
     PRIORIDAD = (EXTENSION_MAC,
-                 EXTENSION_MULTIPORT,
                  PROTOCOLO,
                  MAC_ORIGEN,
                  IP_ORIGEN,
@@ -191,7 +190,7 @@ class Politica(models.Model):
         '''
         Inicializa diccionario de parametros.
         '''
-        self.parametros = {
+        self.params = {
             getattr(Param, attr): set()
             for attr in dir(Param) if not attr.startswith('__')
         }
@@ -205,11 +204,11 @@ class Politica(models.Model):
         política.
         '''
         for objetivo in self.objetivos:
-            objetivo.obtener_parametros(self.parametros)
+            objetivo.obtener_parametros(self.params)
 
         return self.flags_mac(
             self.flags_puerto(
-                self.flags_redes(list())
+                self.flags_redes([])
             )
         )
 
@@ -231,78 +230,79 @@ class Politica(models.Model):
 
 
     def flags_mac(self, lista):
-        params = self.parametros
-        if self.hay_macs():
-            ret = list()
-            for mac in params[Param.MAC]:
-                flags = {Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
-                if lista:
-                    for item in lista:
-                        ret.append(dict(flags, **item))
-                else:
-                    ret.append(flags)
-            lista = ret
-
-        return lista
+        if not self.hay_macs():
+            return lista
+        flags = [{Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
+                 for mac in self.params[Param.MAC]]
+        return self.producto_cartesiano(lista, flags)
 
     def flags_puerto(self, lista):
+        if not self.hay_puertos():
+            return lista
         PUERTOS = (
             ('tcp', Param.TCP_ORIGEN, Param.TCP_DESTINO),
             ('udp', Param.UDP_ORIGEN, Param.UDP_DESTINO),
         )
-        params = self.parametros
-        if self.hay_puertos():
-            ret = list()
-            for proto, origen, destino in PUERTOS:
-                if params[origen] or params[destino]:
-                    flags = {
-                        Flag.EXTENSION_MULTIPORT: '', 
+        ret = list()
+        for proto, origen, destino in PUERTOS:
+            if not self.params[destino]:
+                for sport in self.params[origen]:
+                    ret.append({
                         Flag.PROTOCOLO: proto,
-                    }
-                    if params[origen]:
-                        flags[Flag.PUERTO_ORIGEN] = ",".join(
-                            str(x) for x in params[origen]
-                        )
-                    if params[destino]:
-                        flags[Flag.PUERTO_DESTINO] = ",".join(
-                            str(x) for x in params[destino]
-                        )
-                    if lista:
-                        for item in lista:
-                            ret.append(dict(flags, **item))
-                    else:
-                        ret.append(flags)
-            lista = ret
-        return lista
+                        Flag.PUERTO_ORIGEN: sport,
+                    })
+            elif not self.params[origen]:
+                for dport in self.params[destino]:
+                    ret.append({
+                        Flag.PROTOCOLO: proto,
+                        Flag.PUERTO_DESTINO: dport,
+                    })
+            else:
+                for sport, dport in itertools.product(self.params[origen],
+                                                      self.params[destino]):
+                    ret.append({
+                        Flag.PROTOCOLO: proto,
+                        Flag.PUERTO_ORIGEN: sport,
+                        Flag.PUERTO_DESTINO: dport,
+                    })
+        return self.producto_cartesiano(lista, ret)
 
     def flags_redes(self, lista):
+        if not self.hay_redes():
+            return lista
         flags = dict()
-        params = self.parametros
-        if self.hay_redes():
-            if params[Param.IP_ORIGEN]:
-                flags[Flag.IP_ORIGEN] = ",".join(params[Param.IP_ORIGEN])
-            if params[Param.IP_DESTINO]:
-                flags[Flag.IP_DESTINO] = ",".join(params[Param.IP_DESTINO])
-            if lista:
-                for item in lista:
-                    lista.append(dict(flags, **item))
-            else:
-                lista.append(flags)
-        return lista
+        if self.params[Param.IP_ORIGEN]:
+            flags[Flag.IP_ORIGEN] = ",".join(self.params[Param.IP_ORIGEN])
+        if self.params[Param.IP_DESTINO]:
+            flags[Flag.IP_DESTINO] = ",".join(self.params[Param.IP_DESTINO])
+        return self.producto_cartesiano(lista, [flags])
 
     def hay_puertos(self):
-        return (self.parametros[Param.TCP_ORIGEN] or 
-                self.parametros[Param.TCP_DESTINO] or
-                self.parametros[Param.UDP_ORIGEN] or 
-                self.parametros[Param.UDP_DESTINO])
+        return (self.params[Param.TCP_ORIGEN] or
+                self.params[Param.TCP_DESTINO] or
+                self.params[Param.UDP_ORIGEN] or
+                self.params[Param.UDP_DESTINO])
 
     def hay_macs(self):
-        return (self.parametros[Param.MAC])
+        return self.params[Param.MAC]
 
     def hay_redes(self):
-        return (self.parametros[Param.IP_ORIGEN] or
-                self.parametros[Param.IP_DESTINO])
+        return (self.params[Param.IP_ORIGEN] or
+                self.params[Param.IP_DESTINO])
 
+    def producto_cartesiano(self, lista1, lista2):
+        '''
+        Realiza el producto cartesiano entre dos listas de diccionarios.
+        '''
+        if not lista1:
+            return lista2
+        elif not lista2:
+            return lista1
+        else:
+            lista = list()
+            for flags1, flags2 in itertools.product(lista1, lista2):
+                lista.append(dict(flags1, **flags2))
+            return lista
 
     class Meta:
         database = db

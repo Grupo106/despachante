@@ -271,7 +271,6 @@ class DespachanteTests(unittest.TestCase):
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
             assert '192.168.1.0/24' in item[Flag.IP_DESTINO]
-            assert Flag.EXTENSION_MULTIPORT not in item
             assert Flag.PROTOCOLO not in item
             assert Flag.PUERTO_ORIGEN not in item
             assert Flag.PUERTO_DESTINO not in item
@@ -283,13 +282,10 @@ class DespachanteTests(unittest.TestCase):
         for item in flags:
             assert Flag.IP_DESTINO not in item
             assert Flag.IP_ORIGEN not in item
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_DESTINO]
-                assert '53' not in item[Flag.PUERTO_DESTINO]
+                assert 22 == item[Flag.PUERTO_DESTINO]
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_DESTINO]
-                assert '53' in item[Flag.PUERTO_DESTINO]
+                assert 53 == item[Flag.PUERTO_DESTINO]
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
@@ -298,13 +294,10 @@ class DespachanteTests(unittest.TestCase):
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
             assert '192.168.1.0/24' in item[Flag.IP_DESTINO]
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_DESTINO]
-                assert '53' not in item[Flag.PUERTO_DESTINO]
+                assert 22 == item[Flag.PUERTO_DESTINO]
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_DESTINO]
-                assert '53' in item[Flag.PUERTO_DESTINO]
+                assert 53 == item[Flag.PUERTO_DESTINO]
 
     def test_flags_politica_restriccion_origen(self):
         '''
@@ -339,7 +332,6 @@ class DespachanteTests(unittest.TestCase):
                 assert False
             assert Flag.IP_ORIGEN not in item
             assert Flag.IP_DESTINO not in item
-            assert Flag.EXTENSION_MULTIPORT not in item
             assert Flag.PROTOCOLO not in item
             assert Flag.PUERTO_ORIGEN not in item
             assert Flag.PUERTO_DESTINO not in item
@@ -351,7 +343,6 @@ class DespachanteTests(unittest.TestCase):
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
             assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
-            assert Flag.EXTENSION_MULTIPORT not in item
             assert Flag.PROTOCOLO not in item
             assert Flag.PUERTO_ORIGEN not in item
             assert Flag.PUERTO_DESTINO not in item
@@ -362,13 +353,10 @@ class DespachanteTests(unittest.TestCase):
         assert len(flags) == 2
         for item in flags:
             assert Flag.IP_ORIGEN not in item
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert 22 == item[Flag.PUERTO_ORIGEN]
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert 53 == item[Flag.PUERTO_ORIGEN]
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
@@ -377,13 +365,10 @@ class DespachanteTests(unittest.TestCase):
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
             assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert 22 == item[Flag.PUERTO_ORIGEN]
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert 53 == item[Flag.PUERTO_ORIGEN]
         # Pruebo objetivo mac, ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
@@ -398,13 +383,10 @@ class DespachanteTests(unittest.TestCase):
                 assert False
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
             assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
+                assert 22 == item[Flag.PUERTO_ORIGEN]
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
+                assert 53 == item[Flag.PUERTO_ORIGEN]
 
     def test_flags_politica_restriccion_origen_destino(self):
         '''
@@ -452,50 +434,34 @@ class DespachanteTests(unittest.TestCase):
         politica = models.Politica()
         politica.objetivos = [objetivo_puerto]
         flags = politica.flags()
-        assert len(flags) == 2
+        assert len(flags) == 3
         for item in flags:
             assert Flag.IP_ORIGEN not in item
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '80' in item[Flag.PUERTO_DESTINO]
-                assert '443' in item[Flag.PUERTO_DESTINO]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
-                assert '137' not in item[Flag.PUERTO_DESTINO]
+                assert 22 == item[Flag.PUERTO_ORIGEN]
+                assert item[Flag.PUERTO_DESTINO] in (80, 443)
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '80' not in item[Flag.PUERTO_DESTINO]
-                assert '443' not in item[Flag.PUERTO_DESTINO]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
-                assert '137' in item[Flag.PUERTO_DESTINO]
+                assert 53 == item[Flag.PUERTO_ORIGEN]
+                assert 137 == item[Flag.PUERTO_DESTINO]
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
         flags = politica.flags()
-        assert len(flags) == 2
+        assert len(flags) == 3
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
             assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '443' in item[Flag.PUERTO_DESTINO]
-                assert '80' in item[Flag.PUERTO_DESTINO]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
-                assert '137' not in item[Flag.PUERTO_DESTINO]
+                assert 22 == item[Flag.PUERTO_ORIGEN]
+                assert item[Flag.PUERTO_DESTINO] in (80, 443)
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '443' not in item[Flag.PUERTO_DESTINO]
-                assert '80' not in item[Flag.PUERTO_DESTINO]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
-                assert '137' in item[Flag.PUERTO_DESTINO]
+                assert 53 == item[Flag.PUERTO_ORIGEN]
+                assert 137 == item[Flag.PUERTO_DESTINO]
         # Pruebo objetivo mac, ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         flags = politica.flags()
-        tcp = 0
-        udp = 0
-        assert len(flags) == 4
+        assert len(flags) == 6
         for item in flags:
             if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
                 assert '20:00:00:00:00:00' not in item[Flag.MAC_ORIGEN]
@@ -505,24 +471,12 @@ class DespachanteTests(unittest.TestCase):
                 assert False
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
             assert '192.168.1.0/24' in item[Flag.IP_ORIGEN]
-            assert Flag.EXTENSION_MULTIPORT in item
             if item[Flag.PROTOCOLO] == 'tcp':
-                assert '22' in item[Flag.PUERTO_ORIGEN]
-                assert '443' in item[Flag.PUERTO_DESTINO]
-                assert '80' in item[Flag.PUERTO_DESTINO]
-                assert '53' not in item[Flag.PUERTO_ORIGEN]
-                assert '137' not in item[Flag.PUERTO_DESTINO]
-                tcp += 1
+                assert 22 == item[Flag.PUERTO_ORIGEN]
+                assert item[Flag.PUERTO_DESTINO] in (80, 443)
             if item[Flag.PROTOCOLO] == 'udp':
-                assert '22' not in item[Flag.PUERTO_ORIGEN]
-                assert '443' not in item[Flag.PUERTO_DESTINO]
-                assert '80' not in item[Flag.PUERTO_DESTINO]
-                assert '53' in item[Flag.PUERTO_ORIGEN]
-                assert '137' in item[Flag.PUERTO_DESTINO]
-                udp += 1
-        # verifico que haya 2 tcp y 2 udp
-        assert tcp == 2
-        assert udp == 2
+                assert 53 == item[Flag.PUERTO_ORIGEN]
+                assert 137 == item[Flag.PUERTO_DESTINO]
 
     def test_template_restriccion(self):
         '''
