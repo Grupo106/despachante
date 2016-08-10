@@ -1,0 +1,18 @@
+{#
+ @author: Yonatan Romero
+ Netcop 2016. Universidad Nacional de la Matanza
+#}
+#!/usr/bin/env bash
+IPTABLES=
+/sbin/iptables -F
+{% for politica in politicas %}
+  {% if politica.velocidad_maxima or prioridad %}
+    {% for flags in politica.flags_str() %}
+      /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+    {% endfor %}
+  {% else%}
+    {% for flags in politica.flags_str() %}
+      /sbin/iptables -A INPUT {{ flags }} -j DROP
+    {% endfor %}
+  {% endif %}
+{% endfor %}

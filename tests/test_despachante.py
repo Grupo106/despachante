@@ -503,5 +503,5 @@ class DespachanteTests(unittest.TestCase):
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         env = Environment(loader=PackageLoader('netcop.despachante'))
-        template = env.get_template("restriccion.j2")
+        template = env.get_template("despachante.j2")
         print template.render(politicas=[politica])
