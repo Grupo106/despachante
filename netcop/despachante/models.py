@@ -6,6 +6,7 @@ Utiliza el paquete *peewee* para el mapeo objeto-relacional. Permite realizar
 las consultas a la base de datos en lenguaje python de forma sencilla sin
 necesidad de escribir codigo SQL.
 '''
+import itertools
 import peewee as models
 from . import config
 
@@ -29,8 +30,36 @@ class Flag:
     PUERTO_ORIGEN = '--source-port'
     PUERTO_DESTINO = '--destination-port'
     MAC_ORIGEN = '--mac-source'
-    MATCH = '--match'
-    PROTOCOLO = '--protocol'
+    EXTENSION_MAC = '-m mac'
+    PROTOCOLO = '-p'
+    PRIORIDAD = (EXTENSION_MAC,
+                 PROTOCOLO,
+                 MAC_ORIGEN,
+                 IP_ORIGEN,
+                 IP_DESTINO,
+                 PUERTO_ORIGEN,
+                 PUERTO_DESTINO)
+
+
+class Param:
+    '''
+    Declara los parametros para generar las reglas de iptables.
+    '''
+    IP_ORIGEN = 'ip_origen'
+    IP_DESTINO = 'ip_destino'
+    UDP_ORIGEN = 'udp_origen'
+    UDP_DESTINO = 'udp_destino'
+    TCP_ORIGEN = 'tcp_origen'
+    TCP_DESTINO = 'tcp_destino'
+    MAC = 'mac'
+
+
+class Protocolo:
+    '''
+    Define los numeros de protocolo.
+    '''
+    TCP = 6
+    UDP = 17
 
 
 class ClaseTrafico(models.Model):
@@ -92,12 +121,12 @@ class Puerto(models.Model):
     protocolo = models.SmallIntegerField(default=0)
 
     def __str__(self):
-        proto = str(self.protocolo)
-        if self.protocolo == 6:
-            proto = "tcp"
-        elif self.protocolo == 17:
-            proto = "udp"
-        return u"%s/%s" % (self.numero, proto)
+        proto = ''
+        if self.protocolo == Protocolo.TCP:
+            proto = '/tcp'
+        elif self.protocolo == Protocolo.UDP:
+            proto = '/udp'
+        return u'%d%s' % (self.numero, proto)
 
     class Meta:
         database = db
@@ -149,7 +178,7 @@ class ClasePuerto(models.Model):
 class Politica(models.Model):
     '''
     Define una regla sobre el trafico creada por el usuario.
-    ''' 
+    '''
     id_politica = models.PrimaryKeyField()
     nombre = models.CharField(max_length=63)
     descripcion = models.CharField(max_length=255, null=True)
@@ -157,30 +186,123 @@ class Politica(models.Model):
     prioridad = models.SmallIntegerField(null=True)
     velocidad_maxima = models.IntegerField(null=True)
 
+    def __init__(self, *args, **kwargs):
+        '''
+        Inicializa diccionario de parametros.
+        '''
+        self.params = {
+            getattr(Param, attr): set()
+            for attr in dir(Param) if not attr.startswith('__')
+        }
+        return super(Politica, self).__init__(*args, **kwargs)
+
+
     def flags(self):
         '''
         Devuelve una lista de diccionarios con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
         política.
         '''
-        return []
+        for objetivo in self.objetivos:
+            objetivo.obtener_parametros(self.params)
 
-    @property
-    def origenes(self):
-        '''
-        Devuelve una lista con todos los objetivos que definen los hosts de
-        origen.
-        '''
-        return self.objetivos.select().where(Objetivo.tipo == Objetivo.ORIGEN)
+        return self.flags_mac(
+            self.flags_puerto(
+                self.flags_redes([])
+            )
+        )
 
-    @property
-    def destinos(self):
+    def flags_str(self):
         '''
-        Devuelve una lista con todos los objetivos que definen los hosts de
-        destino.
+        Devuelve una lista de string con los flags necesarios para
+        configurar el iptables para que capture los hosts definidos en la
+        política.
         '''
-        return self.objetivos.select().where(Objetivo.tipo == Objetivo.DESTINO)
+        lista = list()
+        for flags in self.flags():
+            linea = list()
+            for key in Flag.PRIORIDAD:
+                value = flags.get(key)
+                if value is not None:
+                    linea.append("%s %s" % (key, value))
+            lista.append(" ".join(linea))
+        return lista
 
+
+    def flags_mac(self, lista):
+        if not self.hay_macs():
+            return lista
+        flags = [{Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
+                 for mac in self.params[Param.MAC]]
+        return self.producto_cartesiano(lista, flags)
+
+    def flags_puerto(self, lista):
+        if not self.hay_puertos():
+            return lista
+        PUERTOS = (
+            ('tcp', Param.TCP_ORIGEN, Param.TCP_DESTINO),
+            ('udp', Param.UDP_ORIGEN, Param.UDP_DESTINO),
+        )
+        ret = list()
+        for proto, origen, destino in PUERTOS:
+            if not self.params[destino]:
+                for sport in self.params[origen]:
+                    ret.append({
+                        Flag.PROTOCOLO: proto,
+                        Flag.PUERTO_ORIGEN: sport,
+                    })
+            elif not self.params[origen]:
+                for dport in self.params[destino]:
+                    ret.append({
+                        Flag.PROTOCOLO: proto,
+                        Flag.PUERTO_DESTINO: dport,
+                    })
+            else:
+                for sport, dport in itertools.product(self.params[origen],
+                                                      self.params[destino]):
+                    ret.append({
+                        Flag.PROTOCOLO: proto,
+                        Flag.PUERTO_ORIGEN: sport,
+                        Flag.PUERTO_DESTINO: dport,
+                    })
+        return self.producto_cartesiano(lista, ret)
+
+    def flags_redes(self, lista):
+        if not self.hay_redes():
+            return lista
+        flags = dict()
+        if self.params[Param.IP_ORIGEN]:
+            flags[Flag.IP_ORIGEN] = ",".join(self.params[Param.IP_ORIGEN])
+        if self.params[Param.IP_DESTINO]:
+            flags[Flag.IP_DESTINO] = ",".join(self.params[Param.IP_DESTINO])
+        return self.producto_cartesiano(lista, [flags])
+
+    def hay_puertos(self):
+        return (self.params[Param.TCP_ORIGEN] or
+                self.params[Param.TCP_DESTINO] or
+                self.params[Param.UDP_ORIGEN] or
+                self.params[Param.UDP_DESTINO])
+
+    def hay_macs(self):
+        return self.params[Param.MAC]
+
+    def hay_redes(self):
+        return (self.params[Param.IP_ORIGEN] or
+                self.params[Param.IP_DESTINO])
+
+    def producto_cartesiano(self, lista1, lista2):
+        '''
+        Realiza el producto cartesiano entre dos listas de diccionarios.
+        '''
+        if not lista1:
+            return lista2
+        elif not lista2:
+            return lista1
+        else:
+            lista = list()
+            for flags1, flags2 in itertools.product(lista1, lista2):
+                lista.append(dict(flags1, **flags2))
+            return lista
 
     class Meta:
         database = db
@@ -190,9 +312,10 @@ class Politica(models.Model):
 class Objetivo(models.Model):
     '''
     Especifica los objetivos a los que se les va a aplicar la politica.
-    ''' 
+    '''
     ORIGEN = 'o'
     DESTINO = 'd'
+
     id_objetivo = models.PrimaryKeyField()
     politica = models.ForeignKeyField(Politica, related_name='objetivos',
                                       db_column='id_politica')
@@ -201,55 +324,57 @@ class Objetivo(models.Model):
     tipo = models.CharField(max_length=1, default='d')
     direccion_fisica = models.CharField(null=True)
 
-    def flags(self):
+    def obtener_parametros(self, parametros):
         '''
-        Devuelve un diccionario con los flags necesarios para configurar el
-        iptables para que capture los hosts definidos en el objetivo.
+        Completa el diccionario de parametros con los valores necesarios para
+        que el iptables capture los hosts definidos en el objetivo.
         '''
-        flags = dict()
         if self.direccion_fisica is not None:
-            flags.update ({
-                Flag.MATCH: 'mac',
-                Flag.MAC_ORIGEN: self.direccion_fisica   
-            })
+            parametros[Param.MAC].add(self.direccion_fisica)
         if self.clase is not None:
-            flags.update(self.subredes_flags())
-            flags.update(self.puertos_flags())
-        return flags
+            self.parametros_subredes(parametros)
+            self.parametros_puertos(parametros)
+        return parametros
 
-    def subredes_flags(self):
+    def parametros_subredes(self, parametros):
         '''
-        Obtiene los flags para que coincida las subredes de la clase.
+        Obtiene los valores de parametros para que coincida las subredes de la
+        clase.
         '''
-        flags = dict()
         if self.clase and self.clase.redes.count() > 0:
-            flag = (Flag.IP_ORIGEN if self.tipo == Objetivo.ORIGEN else
-                    Flag.IP_DESTINO)
-            redes = set()
+            param = (Param.IP_ORIGEN if self.tipo == Objetivo.ORIGEN else
+                     Param.IP_DESTINO)
             for item in self.clase.redes:
-                redes.add(str(item.cidr))
-            flags = {flag: ",".join(redes)}
-        return flags
+                parametros[param].add(str(item.cidr))
 
-    def puertos_flags(self):
+    def parametros_puertos(self, parametros):
         '''
         Obtiene los flags para que coincida los puertos de la clase.
         '''
-        # FIXME: Multiport!!!
-        flags = dict()
         if self.clase and self.clase.puertos.count() > 0:
-            flag = (Flag.PUERTO_ORIGEN if self.tipo == Objetivo.ORIGEN else
-                    Flag.PUERTO_DESTINO)
-            puertos = set()
-            protocolos = set()
             for item in self.clase.puertos:
-                puertos.add(str(item.puerto.numero))
-                protocolos.add(str(item.puerto.protocolo))
-            flags = {
-                flag: ",".join(puertos),
-                Flag.PROTOCOLO: ",".join(protocolos)
-            }
-        return flags
+                for proto in (Protocolo.TCP, Protocolo.UDP):
+                    param = self.definir_parametro_puerto(proto, item.puerto)
+                    if param:
+                        parametros[param].add(item.puerto.numero)
+
+    def definir_parametro_puerto(self, protocolo, puerto):
+        '''
+        Defino el parametro que se va cargar segun si el objetivo es origen o
+        destino y el protocolo del puerto.
+        '''
+        if protocolo == Protocolo.TCP:
+            if puerto.protocolo in (0, Protocolo.TCP):
+                if self.tipo == Objetivo.ORIGEN:
+                    return Param.TCP_ORIGEN
+                else:
+                    return Param.TCP_DESTINO
+        elif protocolo == Protocolo.UDP:
+            if puerto.protocolo in (0, Protocolo.UDP):
+                if self.tipo == Objetivo.ORIGEN:
+                    return Param.UDP_ORIGEN
+                else:
+                    return Param.UDP_DESTINO
 
 
     class Meta:
@@ -264,9 +389,9 @@ class RangoHorario(models.Model):
     Atributos
     ----------
         * dia: Dia de la semana, entre 0 y 6 siendo 0 el dia domingo y 6 sabado
-        * hora_inicial: Hora de inicio del rango valido 
-        * hora_fin: Hora de fin del rango valido 
-    ''' 
+        * hora_inicial: Hora de inicio del rango valido
+        * hora_fin: Hora de fin del rango valido
+    '''
     id_rango_horario = models.PrimaryKeyField()
     politica = models.ForeignKeyField(Politica, related_name='horarios',
                                       db_column='id_politica')
