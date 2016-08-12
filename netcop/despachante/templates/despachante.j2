@@ -1,16 +1,66 @@
 {#
+ 
+ Template para generar el script de configuracion del kernel de linux
+
+ Las politicas de tc siempre son para trafico saliente, por lo que el trafico
+ de bajada se configura en el interfaz inside y el trafico de subida se
+ configura en la interfaz outside
+
+ bajada -> inside
+ subida -> outside
+
  @author: Yonatan Romero
  Netcop 2016. Universidad Nacional de la Matanza
 #}
 #!/usr/bin/env bash
+
+{# Limpia reglas previas #}
 /sbin/iptables -F
+/sbin/tc qdisc del dev {{ if_outside }} root
+/sbin/tc qdisc del dev {{ if_inside }} root
+
+{# inicializacion del tc #}
+/sbin/tc qdisc add dev {{ if_outside }} root handle 1: htb default 1
+/sbin/tc class add dev {{ if_outside }} parent 1: classid 1:1 htb rate {{ bw_subida|default('1gbit') }}
+/sbin/tc qdisc add dev {{ if_inside }} root handle 1: htb default 1
+/sbin/tc class add dev {{ if_inside }} parent 1: classid 1:1 htb rate {{ bw_bajada|default('1gbit') }}
+
+
 {% for politica in politicas %}
-  {% if politica.velocidad_maxima or prioridad %}
-    {% for flags in politica.flags_str() %}
+
+  {# Priorizacion #}
+  {# ----------------------------------------------------------------------- #}
+  {% if politica.prioridad %}
+    # DEBUG: priorizacion {{ politica.id_politica }}
+    /sbin/tc class add dev {{ if_outside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc class add dev {{ if_inside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+    /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+    {% for flags in politica.flags() %}
       /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
-  {% else%}
-    {% for flags in politica.flags_str() %}
+
+  {# Limitacion #}
+  {# ----------------------------------------------------------------------- #}
+  {% elif politica.velocidad_bajada or politica.velocidad_subida %}
+    # DEBUG: limitacion {{ politica.id_politica }}
+    {% if politica.velocidad_subida %}
+      /sbin/tc class add dev {{ if_outside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_subida }}
+      /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+    {% endif %}
+    {% if politica.velocidad_bajada %}
+      /sbin/tc class add dev {{ if_inside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_bajada }}
+      /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+    {% endif %}
+    {% for flags in politica.flags() %}
+      /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+    {% endfor %}
+
+  {# Restriccion #}
+  {# ----------------------------------------------------------------------- #}
+  {% else %}
+    # DEBUG: restriccion {{ politica.id_politica }}
+    {% for flags in politica.flags() %}
       /sbin/iptables -A INPUT {{ flags }} -j DROP
     {% endfor %}
   {% endif %}

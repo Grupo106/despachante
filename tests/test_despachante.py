@@ -266,7 +266,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo ip
         politica = models.Politica()
         politica.objetivos = [objetivo_ip]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 1
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
@@ -277,7 +277,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             assert Flag.IP_DESTINO not in item
@@ -289,7 +289,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_DESTINO]
@@ -321,7 +321,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo mac
         politica = models.Politica()
         politica.objetivos = [objetivo_mac]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
@@ -338,7 +338,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo ip
         politica = models.Politica()
         politica.objetivos = [objetivo_ip]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 1
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
@@ -349,7 +349,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             assert Flag.IP_ORIGEN not in item
@@ -360,7 +360,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
@@ -372,7 +372,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo objetivo mac, ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 4
         for item in flags:
             if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
@@ -413,7 +413,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo ip y mac
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_mac]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 2
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
@@ -433,7 +433,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo solo objetivo puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 3
         for item in flags:
             assert Flag.IP_ORIGEN not in item
@@ -446,7 +446,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo objetivo ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_ip, objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 3
         for item in flags:
             assert '192.168.0.0/24' in item[Flag.IP_ORIGEN]
@@ -460,7 +460,7 @@ class DespachanteTests(unittest.TestCase):
         # Pruebo objetivo mac, ip y puerto
         politica = models.Politica()
         politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
-        flags = politica.flags()
+        flags = politica.flags_dict()
         assert len(flags) == 6
         for item in flags:
             if '10:00:00:00:00:00' in item[Flag.MAC_ORIGEN]:
@@ -500,8 +500,21 @@ class DespachanteTests(unittest.TestCase):
             Param.UDP_DESTINO: [137],
         })
         # Pruebo objetivo mac, ip y puerto
-        politica = models.Politica()
-        politica.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        politica1 = models.Politica(id_politica=61)
+        politica1.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        politica2 = models.Politica(id_politica=62,
+                                    velocidad_bajada='1mbps')
+        politica2.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        politica3 = models.Politica(id_politica=63,
+                                    velocidad_bajada='1mbps',
+                                    velocidad_subida='0.5mbps')
+        politica3.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
+        politica4 = models.Politica(id_politica=64,
+                                    prioridad=1)
+        politica4.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         env = Environment(loader=PackageLoader('netcop.despachante'))
         template = env.get_template("despachante.j2")
-        print template.render(politicas=[politica])
+        print template.render(politicas=[politica1, politica2, politica3,
+                                         politica4],
+                              if_outside='eth0',
+                              if_inside='eth1')

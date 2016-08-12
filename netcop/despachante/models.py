@@ -197,7 +197,7 @@ class Politica(models.Model):
         return super(Politica, self).__init__(*args, **kwargs)
 
 
-    def flags(self):
+    def flags_dict(self):
         '''
         Devuelve una lista de diccionarios con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
@@ -212,14 +212,14 @@ class Politica(models.Model):
             )
         )
 
-    def flags_str(self):
+    def flags(self):
         '''
         Devuelve una lista de string con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
         política.
         '''
         lista = list()
-        for flags in self.flags():
+        for flags in self.flags_dict():
             linea = list()
             for key in Flag.PRIORIDAD:
                 value = flags.get(key)
