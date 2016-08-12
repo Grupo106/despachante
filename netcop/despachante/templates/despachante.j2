@@ -3,7 +3,6 @@
  Netcop 2016. Universidad Nacional de la Matanza
 #}
 #!/usr/bin/env bash
-IPTABLES=
 /sbin/iptables -F
 {% for politica in politicas %}
   {% if politica.velocidad_maxima or prioridad %}
