@@ -16,10 +16,10 @@ INSIDE = 'i'
 OUTSIDE = 'o'
 
 # Declaro parametros de conexion de la base de datos
-db = models.PostgresqlDatabase(config.BD_DATABASE,
-                               host=config.BD_HOST,
-                               user=config.BD_USER,
-                               password=config.BD_PASSWORD)
+db = models.PostgresqlDatabase(config.DATABASE['database'],
+                               host=config.DATABASE['host'],
+                               user=config.DATABASE['user'],
+                               password=config.DATABASE['password'])
 
 class Flag:
     '''

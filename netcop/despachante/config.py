@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 Lee archivo de configuracion en formato INI ubicado en
-'/etc/netcop/netcop.conf'
+'/etc/netcop/netcop.config'
 
 El formato del archivo esperado es
 
@@ -9,6 +9,9 @@ El formato del archivo esperado es
     [netcop]
     outside=eth0
     inside=eth1
+    url_version=http://netcop.com/version
+    url_download=http://netcop.com/download
+    local_version=/var/local/netcop/version
     
     [database]
     host=
@@ -19,26 +22,31 @@ El formato del archivo esperado es
 '''
 import configparser
 
-NETCOP_CONFIG = '/etc/netcop/netcop.conf'
+NETCOP_CONFIG = '/etc/netcop/netcop.config'
 
 # Parametros de conexion de la base de datos por defecto
-DEFAULT_BD_HOST = 'localhost'
-DEFAULT_BD_DATABASE = 'postgres'
-DEFAULT_BD_USER = 'postgres'
-DEFAULT_BD_PASSWORD = 'postgres'
+class Default:
+    BD_HOST = 'localhost'
+    BD_DATABASE = 'postgres'
+    BD_USER = 'postgres'
+    BD_PASSWORD = 'postgres'
 
 global BD_HOST, BD_DATABASE, BD_USER, BD_PASSWORD
 
 config = configparser.ConfigParser()
 config.read(NETCOP_CONFIG)
 
-if config.has_section('database'):
-    BD_HOST = config['database'].get('host', DEFAULT_BD_HOST)
-    BD_DATABASE = config['database'].get('database', DEFAULT_BD_DATABASE)
-    BD_USER = config['database'].get('user', DEFAULT_BD_USER)
-    BD_PASSWORD = config['database'].get('password', DEFAULT_BD_PASSWORD)
-else:
-    BD_HOST = DEFAULT_BD_HOST
-    BD_DATABASE = DEFAULT_BD_DATABASE
-    BD_USER = DEFAULT_BD_USER
-    BD_PASSWORD = DEFAULT_BD_PASSWORD
+# guarda el resto de las configuraciones del modulo
+for section in config.sections():
+    conf = dict()
+    for item in config.items(section):
+        conf[item[0].lower()] = item[1]
+    globals()[section] = conf
+
+# establece opciones por default
+if globals().get('DATABASE') is None:
+    database = globals()['DATABASE'] = dict()
+    database['host'] = Default.BD_HOST
+    database['database'] = Default.BD_DATABASE
+    database['user'] = Default.BD_USER
+    database['password'] = Default.BD_PASSWORD
