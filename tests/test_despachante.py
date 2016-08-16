@@ -514,7 +514,11 @@ class DespachanteTests(unittest.TestCase):
         politica4.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         env = Environment(loader=PackageLoader('netcop.despachante'))
         template = env.get_template("despachante.j2")
-        print template.render(politicas=[politica1, politica2, politica3,
-                                         politica4],
-                              if_outside='eth0',
-                              if_inside='eth1')
+        script = template.render(politicas=[politica1, politica2, politica3,
+                                            politica4],
+                                 if_outside='eth0',
+                                 if_inside='eth1')
+        assert '1mbit' in script
+        assert '2048kbit' in script
+        assert '512kbit' in script
+        assert 'DROP' in script
