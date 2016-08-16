@@ -12,28 +12,31 @@
  @author: Yonatan Romero
  Netcop 2016. Universidad Nacional de la Matanza
 #}
+{% set root_queue=9999 %}
+
 #!/usr/bin/env bash
 
 {# Limpia reglas previas #}
+/sbin/iptables -P INPUT ACCEPT
 /sbin/iptables -F
+/sbin/iptables -A INPUT -i lo -j ACCEPT
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 /sbin/tc qdisc del dev {{ if_outside }} root
 /sbin/tc qdisc del dev {{ if_inside }} root
 
 {# inicializacion del tc #}
-/sbin/tc qdisc add dev {{ if_outside }} root handle 1: htb default 1
-/sbin/tc class add dev {{ if_outside }} parent 1: classid 1:1 htb rate {{ bw_subida|default('1gbit') }}
-/sbin/tc qdisc add dev {{ if_inside }} root handle 1: htb default 1
-/sbin/tc class add dev {{ if_inside }} parent 1: classid 1:1 htb rate {{ bw_bajada|default('1gbit') }}
-
+/sbin/tc qdisc add dev {{ if_outside }} root handle 1: htb default {{ root_queue }}
+/sbin/tc class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1gbit') }}
+/sbin/tc qdisc add dev {{ if_inside }} root handle 1: htb default {{ root_queue }}
+/sbin/tc class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1gbit') }}
 
 {% for politica in politicas %}
-
   {# Priorizacion #}
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
     # DEBUG: priorizacion {{ politica.id_politica }}
-    /sbin/tc class add dev {{ if_outside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
-    /sbin/tc class add dev {{ if_inside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
     /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
     /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
     {% for flags in politica.flags() %}
@@ -45,11 +48,11 @@
   {% elif politica.velocidad_bajada or politica.velocidad_subida %}
     # DEBUG: limitacion {{ politica.id_politica }}
     {% if politica.velocidad_subida %}
-      /sbin/tc class add dev {{ if_outside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_subida }}
+      /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_subida }} prio 4
       /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
     {% endif %}
     {% if politica.velocidad_bajada %}
-      /sbin/tc class add dev {{ if_inside }} parent 1:1 classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_bajada }}
+      /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_bajada }} prio 4
       /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
     {% endif %}
     {% for flags in politica.flags() %}
@@ -65,3 +68,7 @@
     {% endfor %}
   {% endif %}
 {% endfor %}
+
+/sbin/iptables -P INPUT ACCEPT
+/sbin/iptables -P FORWARD ACCEPT
+/sbin/iptables -P OUTPUT ACCEPT

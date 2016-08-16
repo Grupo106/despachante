@@ -503,11 +503,11 @@ class DespachanteTests(unittest.TestCase):
         politica1 = models.Politica(id_politica=61)
         politica1.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         politica2 = models.Politica(id_politica=62,
-                                    velocidad_bajada='1mbps')
+                                    velocidad_bajada='1mbit')
         politica2.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         politica3 = models.Politica(id_politica=63,
-                                    velocidad_bajada='1mbps',
-                                    velocidad_subida='0.5mbps')
+                                    velocidad_bajada='2048kbit',
+                                    velocidad_subida='512kbit')
         politica3.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         politica4 = models.Politica(id_politica=64,
                                     prioridad=1)
