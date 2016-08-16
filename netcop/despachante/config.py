@@ -24,12 +24,21 @@ import configparser
 
 NETCOP_CONFIG = '/etc/netcop/netcop.config'
 
-# Parametros de conexion de la base de datos por defecto
+# Parametros por defecto
 class Default:
-    BD_HOST = 'localhost'
-    BD_DATABASE = 'postgres'
-    BD_USER = 'postgres'
-    BD_PASSWORD = 'postgres'
+    DATABASE = {
+        'host': 'localhost',
+        'database': 'postgres',
+        'user': 'postgres',
+        'password': 'postgres',
+    }
+    NETCOP = {
+        'local_version': '/tmp/actualizador',
+        'url_version': 'http://netcop.ftp.sh/version',
+        'url_download': 'http://netcop.ftp.sh/descarga',
+        'outside': 'eth0',
+        'inside': 'eth1',
+    }
 
 global BD_HOST, BD_DATABASE, BD_USER, BD_PASSWORD
 
@@ -44,9 +53,7 @@ for section in config.sections():
     globals()[section] = conf
 
 # establece opciones por default
-if globals().get('DATABASE') is None:
-    database = globals()['DATABASE'] = dict()
-    database['host'] = Default.BD_HOST
-    database['database'] = Default.BD_DATABASE
-    database['user'] = Default.BD_USER
-    database['password'] = Default.BD_PASSWORD
+sections = [a for a in dir(Default) if not a.startswith('__')]
+for section in sections:
+    if globals().get(section) is None:
+        globals()[section] = getattr(Default, section)
