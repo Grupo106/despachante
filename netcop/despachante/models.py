@@ -16,10 +16,10 @@ INSIDE = 'i'
 OUTSIDE = 'o'
 
 # Declaro parametros de conexion de la base de datos
-db = models.PostgresqlDatabase(config.BD_DATABASE,
-                               host=config.BD_HOST,
-                               user=config.BD_USER,
-                               password=config.BD_PASSWORD)
+db = models.PostgresqlDatabase(config.DATABASE['database'],
+                               host=config.DATABASE['host'],
+                               user=config.DATABASE['user'],
+                               password=config.DATABASE['password'])
 
 class Flag:
     '''
@@ -197,7 +197,7 @@ class Politica(models.Model):
         return super(Politica, self).__init__(*args, **kwargs)
 
 
-    def flags(self):
+    def flags_dict(self):
         '''
         Devuelve una lista de diccionarios con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
@@ -212,14 +212,14 @@ class Politica(models.Model):
             )
         )
 
-    def flags_str(self):
+    def flags(self):
         '''
         Devuelve una lista de string con los flags necesarios para
         configurar el iptables para que capture los hosts definidos en la
         política.
         '''
         lista = list()
-        for flags in self.flags():
+        for flags in self.flags_dict():
             linea = list()
             for key in Flag.PRIORIDAD:
                 value = flags.get(key)
