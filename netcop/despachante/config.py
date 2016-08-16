@@ -48,7 +48,7 @@ for section in config.sections():
     conf = dict()
     for item in config.items(section):
         conf[item[0].lower()] = item[1]
-    globals()[section] = conf
+    globals()[section.upper()] = conf
 
 # establece opciones por default
 sections = [a for a in dir(Default) if not a.startswith('__')]
