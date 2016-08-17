@@ -6,7 +6,7 @@ import unittest
 import mock
 from mock import Mock, MagicMock
 
-from netcop.despachante import models, config
+from netcop.despachante import models, config, Despachante
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -522,3 +522,46 @@ class DespachanteTests(unittest.TestCase):
         assert '2048kbit' in script
         assert '512kbit' in script
         assert 'DROP' in script
+
+    @mock.patch('os.path.getmtime')
+    def test_sin_ultimo_despacho(self, mock):
+        '''
+        Prueba obtener la fecha de ultimo despacho, sin despachos anteriores.
+        Debe devolver None.
+        '''
+        despachante = Despachante()
+        mock.side_effect = OSError()
+        assert despachante.fecha_ultimo_despacho is None
+        assert mock.called
+
+    @mock.patch('os.path.getmtime')
+    def test_ultimo_despacho(self, mock):
+        '''
+        Prueba obtener la fecha de ultimo despacho.
+        '''
+        despachante = Despachante()
+        mock.return_value = 1471446575.5391228
+        assert despachante.fecha_ultimo_despacho == 1471446575.5391228
+        assert mock.called
+
+    @mock.patch('netcop.despachante.models.RangoHorario.select')
+    def test_hay_reglas_temporales(self, mock_select):
+        '''
+        Prueba que devuelva verdadero cuando haya reglas que dependan del
+        tiempo.
+        '''
+        # preparo los mocks
+        despachante = Despachante()
+        mock_exists = Mock()
+        mock_select.return_value = Mock()
+        mock_select.return_value.exists = mock_exists
+        # pruebo en caso de que no existan reglas temporales
+        mock_exists.return_value = False
+        assert not despachante.hay_reglas_temporales()
+        assert mock_exists.called
+        # pruebo en caso de que si existan reglas temporales
+        mock_exists.reset_mock()
+        mock_exists.return_value = True
+        assert despachante.hay_reglas_temporales()
+        assert mock_exists.called
+

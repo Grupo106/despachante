@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+from netcop.despachante import Despachante
+
+if __name__ == '__main__':
+    d = Despachante() 
+    if d.fecha_ultimo_despacho is None:
+        d.despachar()
+    elif d.hay_reglas_temporales() and d.hay_cambio_de_politicas():
+        d.despachar()
+    else:
+        print("No hay necesidad de despacho.")
