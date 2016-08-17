@@ -565,3 +565,16 @@ class DespachanteTests(unittest.TestCase):
         assert despachante.hay_reglas_temporales()
         assert mock_exists.called
 
+    @unittest.skip("no implementado")
+    def test_politicas_activas_actual(self):
+        '''
+        Obtiene lista de politicas activas en tiempo actual.
+        '''
+        raise NotImplementedError()
+
+    @unittest.skip("no implementado")
+    def test_politicas_activas_especifico(self):
+        '''
+        Obtiene lista de politicas activas en un tiempo especifico.
+        '''
+        raise NotImplementedError()
