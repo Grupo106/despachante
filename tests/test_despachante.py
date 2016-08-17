@@ -4,6 +4,7 @@ Pruebas del despachante de clases de trafico.
 '''
 import unittest
 import mock
+from datetime import datetime, timedelta
 from mock import Mock, MagicMock
 
 from netcop.despachante import models, config, Despachante
@@ -570,11 +571,22 @@ class DespachanteTests(unittest.TestCase):
         '''
         Obtiene lista de politicas activas en tiempo actual.
         '''
-        raise NotImplementedError()
+        with models.db.atomic() as transaction:
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='foo')
+            politica2 = models.Politica.create(nombre='bar')
+            rango_horario = models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=1)).time(),
+            )
+            raise NotImplementedError()
 
     @unittest.skip("no implementado")
     def test_politicas_activas_especifico(self):
         '''
         Obtiene lista de politicas activas en un tiempo especifico.
         '''
-        raise NotImplementedError()
+        with models.db.atomic() as transaction:
+            raise NotImplementedError()
