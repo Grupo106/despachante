@@ -49,10 +49,11 @@ class Despachante:
         Obtiene una lista de politicas activas en la fecha pasada por
         parametro.
 
-        En caso que no se pase fecha, obtiene las politicas activas en el
-        momento actual.
+        En caso que no se pase fecha por parametro, obtiene las politicas
+        activas en el momento actual.
         '''
-        pass
+        politicas = models.Politica.select()
+        return [politica for politica in politicas if politica.activa(fecha)]
 
     def despachar(self):
         '''

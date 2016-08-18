@@ -566,27 +566,100 @@ class DespachanteTests(unittest.TestCase):
         assert despachante.hay_reglas_temporales()
         assert mock_exists.called
 
-    @unittest.skip("no implementado")
     def test_politicas_activas_actual(self):
         '''
         Obtiene lista de politicas activas en tiempo actual.
+
+        politica1: Rango horario valido (debe mostrarse)
+        politica2: Rango horario invalido (no debe mostrarse)
+        politica3: Sin rango horario (debe mostrarse)
         '''
         with models.db.atomic() as transaction:
+            despachante = Despachante()
             now = datetime.now()
-            politica1 = models.Politica.create(nombre='foo')
-            politica2 = models.Politica.create(nombre='bar')
-            rango_horario = models.RangoHorario.create(
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            politica3 = models.Politica.create(nombre='politica3')
+            # politica1: rango no valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica1: rango valido
+            models.RangoHorario.create(
                 politica=politica1,
                 dia=now.day,
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=(now + timedelta(hours=1)).time(),
             )
-            raise NotImplementedError()
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now + timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            politicas = despachante.obtener_politicas()
+            assert [_ for _ in politicas if _.nombre == 'politica1']
+            assert not [_ for _ in politicas if _.nombre == 'politica2']
+            assert [_ for _ in politicas if _.nombre == 'politica3']
+            transaction.rollback()
 
-    @unittest.skip("no implementado")
     def test_politicas_activas_especifico(self):
         '''
         Obtiene lista de politicas activas en un tiempo especifico.
+
+        politica1: Rango horario valido (debe mostrarse)
+        politica2: Rango horario invalido (no debe mostrarse)
+        politica3: Sin rango horario (debe mostrarse)
         '''
         with models.db.atomic() as transaction:
-            raise NotImplementedError()
+            despachante = Despachante()
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            politica3 = models.Politica.create(nombre='politica3')
+            # politica1: rango no valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica1: rango no valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=2)).time(),
+                hora_fin=(now + timedelta(hours=1)).time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # una hora atras
+            fecha = now - timedelta(hours=2)
+            politicas = despachante.obtener_politicas(fecha)
+            assert [_ for _ in politicas if _.nombre == 'politica1']
+            assert not [_ for _ in politicas if _.nombre == 'politica2']
+            assert [_ for _ in politicas if _.nombre == 'politica3']
+            transaction.rollback()
