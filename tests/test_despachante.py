@@ -631,7 +631,7 @@ class DespachanteTests(unittest.TestCase):
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
-                dia=now.day + 1,
+                dia=now.day,
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
