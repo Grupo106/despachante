@@ -4,7 +4,7 @@ Encargado de transformar las politicas creadas por el usuario en comandos que
 el sistema operativo pueda reconocer.
 '''
 import os
-
+import subprocess
 from . import models, config
 from jinja2 import Environment, PackageLoader
 
@@ -69,9 +69,15 @@ class Despachante:
         manda a ejecutar al sistema operativo.
         '''
         env = Environment(loader=PackageLoader('netcop.despachante'))
-        template = env.get_template("despachante.j2")
+        template = env.get_template('despachante.j2')
         script = template.render(politicas=self.obtener_politicas(),
                                  if_outside=config.NETCOP['outside'],
                                  if_inside=config.NETCOP['inside'])
+        # escribo script en el archivo
         with open(SCRIPT_FILE, 'w') as f:
-            f.write(script)
+            for line in script.split('\n'):
+                line = line.strip()
+                if line:
+                    f.write(line + '\n')
+        # ejecuto script
+        subprocess.Popen(['/bin/sh', SCRIPT_FILE]) 
