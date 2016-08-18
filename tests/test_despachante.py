@@ -633,28 +633,28 @@ class DespachanteTests(unittest.TestCase):
                 politica=politica1,
                 dia=now.day + 1,
                 hora_inicial=(now - timedelta(hours=1)).time(),
-                hora_fin=(now + timedelta(hours=2)).time(),
+                hora_fin=now.time(),
             )
-            # politica1: rango no valido
+            # politica1: rango valido
             models.RangoHorario.create(
                 politica=politica1,
                 dia=now.day,
                 hora_inicial=(now - timedelta(hours=2)).time(),
-                hora_fin=(now + timedelta(hours=1)).time(),
+                hora_fin=now.time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
                 dia=now.day,
                 hora_inicial=(now - timedelta(hours=1)).time(),
-                hora_fin=(now + timedelta(hours=2)).time(),
+                hora_fin=now.time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
                 dia=now.day + 1,
-                hora_inicial=(now - timedelta(hours=1)).time(),
-                hora_fin=(now + timedelta(hours=2)).time(),
+                hora_inicial=(now - timedelta(hours=2)).time(),
+                hora_fin=now.time(),
             )
             # una hora atras
             fecha = now - timedelta(hours=2)
