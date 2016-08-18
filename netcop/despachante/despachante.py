@@ -5,7 +5,8 @@ el sistema operativo pueda reconocer.
 '''
 import os
 
-from . import models
+from . import models, config
+from jinja2 import Environment, PackageLoader
 
 # Nombre del script que se creara para despachar las politicas. Conviene que
 # sea en una carpeta temporal para que se elimine cuando el sistema operativo
@@ -67,4 +68,10 @@ class Despachante:
         Genera el script bash con las politicas activas en este momento y lo
         manda a ejecutar al sistema operativo.
         '''
-        pass
+        env = Environment(loader=PackageLoader('netcop.despachante'))
+        template = env.get_template("despachante.j2")
+        script = template.render(politicas=self.obtener_politicas(),
+                                 if_outside=config.NETCOP['outside'],
+                                 if_inside=config.NETCOP['inside'])
+        with open(SCRIPT_FILE, 'w') as f:
+            f.write(script)

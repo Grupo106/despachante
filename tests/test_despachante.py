@@ -690,7 +690,8 @@ class DespachanteTests(unittest.TestCase):
             assert despachante.hay_cambio_de_politicas() is False
             transaction.rollback()
 
-    def test_hay_cambio_politicas_sin_despacho_anterior(self):
+    @mock.patch.object(Despachante, 'fecha_ultimo_despacho')
+    def test_hay_cambio_politicas_sin_despacho_anterior(self, mock):
         '''
         Prueba la verificacion de cambios de politicas por rango horario en
         caso de que no haya despacho anterior.
@@ -705,7 +706,18 @@ class DespachanteTests(unittest.TestCase):
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
-            # pruebo en caso verdadero
             mock.__get__ = Mock(return_value=None)
             despachante = Despachante()
             assert despachante.hay_cambio_de_politicas() is True
+            transaction.rollback()
+
+    def test_despachar(self):
+        '''
+        Prueba la creacion y ejecucion del script de politicas.
+        '''
+        with models.db.atomic() as transaction:
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            despachante = Despachante()
+            assert despachante.despachar() is None
+            transaction.rollback()
