@@ -656,10 +656,56 @@ class DespachanteTests(unittest.TestCase):
                 hora_inicial=(now - timedelta(hours=2)).time(),
                 hora_fin=now.time(),
             )
-            # una hora atras
+            # dos horas atras
             fecha = now - timedelta(hours=2)
             politicas = despachante.obtener_politicas(fecha)
             assert [_ for _ in politicas if _.nombre == 'politica1']
             assert not [_ for _ in politicas if _.nombre == 'politica2']
             assert [_ for _ in politicas if _.nombre == 'politica3']
             transaction.rollback()
+
+    @mock.patch.object(Despachante, 'fecha_ultimo_despacho')
+    def test_hay_cambio_politicas(self, mock):
+        '''
+        Prueba la verificacion de cambios de politicas por rango horario.
+        '''
+        with models.db.atomic() as transaction:
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            # pruebo en caso verdadero
+            ultimo = now - timedelta(minutes=1)
+            mock.__get__ = Mock(return_value=ultimo)
+            despachante = Despachante()
+            assert despachante.hay_cambio_de_politicas() is True
+            # pruebo en caso falso
+            ultimo = now - timedelta(hours=2)
+            mock.__get__ = Mock(return_value=ultimo)
+            assert despachante.hay_cambio_de_politicas() is False
+            transaction.rollback()
+
+    def test_hay_cambio_politicas_sin_despacho_anterior(self):
+        '''
+        Prueba la verificacion de cambios de politicas por rango horario en
+        caso de que no haya despacho anterior.
+        '''
+        with models.db.atomic() as transaction:
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            # pruebo en caso verdadero
+            mock.__get__ = Mock(return_value=None)
+            despachante = Despachante()
+            assert despachante.hay_cambio_de_politicas() is True

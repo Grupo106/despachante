@@ -323,6 +323,11 @@ class Politica(models.Model):
                 return True
         return False
 
+    def __eq__(self, item):
+        return self.id_politica == item.id_politica
+
+    def __hash__(self):
+        return hash(self.id_politica)
 
     def __str__(self):
         return self.nombre
@@ -427,7 +432,7 @@ class RangoHorario(models.Model):
         Devuelve verdadero si la fecha-hora (item) esta dentro del rango.
         '''
         return (item.day == self.dia and
-                self.hora_inicial <= item.time() <= self.hora_fin)
+                self.hora_inicial <= item.time() < self.hora_fin)
 
     class Meta:
         database = db

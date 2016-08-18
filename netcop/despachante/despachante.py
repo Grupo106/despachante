@@ -42,7 +42,14 @@ class Despachante:
         despachadas por ultima vez y las politicas vigentes en el momento
         actual.
         '''
-        pass
+        ultimo_despacho = self.fecha_ultimo_despacho
+        # si no se encontro ultimo despacho, hay cambios de politicas
+        if ultimo_despacho is None:
+            return True
+        anterior = set(self.obtener_politicas(ultimo_despacho))
+        ahora = set(self.obtener_politicas())
+        # si la diferencia es distinta de cero, hay cambios
+        return len(anterior - ahora) + len(ahora - anterior) != 0
 
     def obtener_politicas(self, fecha=None):
         '''
