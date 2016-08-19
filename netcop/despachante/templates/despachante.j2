@@ -1,5 +1,4 @@
 {#
- 
  Template para generar el script de configuracion del kernel de linux
 
  Las politicas de tc siempre son para trafico saliente, por lo que el trafico
@@ -15,32 +14,34 @@
 {% set root_queue=9999 %}
 #!/bin/sh
 
+IPTABLES="/usr/bin/sudo /sbin/iptables"
+TC="/usr/bin/sudo /sbin/tc"
+
 {# Limpia reglas previas #}
-/sbin/iptables -P INPUT ACCEPT
-/sbin/iptables -F
-/sbin/iptables -A INPUT -i lo -j ACCEPT
-/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-/sbin/tc qdisc del dev {{ if_outside }} root
-/sbin/tc qdisc del dev {{ if_inside }} root
+$IPTABLES -P INPUT ACCEPT
+$IPTABLES -F
+$IPTABLES -A INPUT -i lo -j ACCEPT
+$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+$TC qdisc del dev {{ if_outside }} root
+$TC qdisc del dev {{ if_inside }} root
 
 {# inicializacion del tc #}
-/sbin/tc qdisc add dev {{ if_outside }} root handle 1: htb default {{ root_queue }}
-/sbin/tc class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1gbit') }}
-/sbin/tc qdisc add dev {{ if_inside }} root handle 1: htb default {{ root_queue }}
-/sbin/tc class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1gbit') }}
+$TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ root_queue }}
+$TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1gbit') }}
+$TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ root_queue }}
+$TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1gbit') }}
 
 {% for politica in politicas %}
   {# Priorizacion #}
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
     # DEBUG: priorizacion {{ politica.id_politica }}
-    /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
-    /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
-    /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
-    /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
-    {{ loop.index }} fw flowid 1:{{ loop.index }}
+    $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
+    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
+    $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+    $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% for flags in politica.flags() %}
-      /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+      $IPTABLES -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
 
   {# Limitacion #}
@@ -48,15 +49,15 @@
   {% elif politica.velocidad_bajada or politica.velocidad_subida %}
     # DEBUG: limitacion {{ politica.id_politica }}
     {% if politica.velocidad_subida %}
-      /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_subida }} prio 4
-      /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ loop.index }} fw flowid 1:{{ politica.id_politica }}
+      $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_subida }} prio 4
+      $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ loop.index }} fw flowid 1:{{ politica.id_politica }}
     {% endif %}
     {% if politica.velocidad_bajada %}
-      /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_bajada }} prio 4
-      /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+      $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_bajada }} prio 4
+      $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
     {% for flags in politica.flags() %}
-      /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+      $IPTABLES -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
 
   {# Restriccion #}
@@ -64,11 +65,11 @@
   {% else %}
     # DEBUG: restriccion {{ politica.id_politica }}
     {% for flags in politica.flags() %}
-      /sbin/iptables -A INPUT {{ flags }} -j DROP
+      $IPTABLES -A INPUT {{ flags }} -j DROP
     {% endfor %}
   {% endif %}
 {% endfor %}
 
-/sbin/iptables -P INPUT ACCEPT
-/sbin/iptables -P FORWARD ACCEPT
-/sbin/iptables -P OUTPUT ACCEPT
+$IPTABLES -P INPUT ACCEPT
+$IPTABLES -P FORWARD ACCEPT
+$IPTABLES -P OUTPUT ACCEPT

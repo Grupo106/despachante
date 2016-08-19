@@ -524,6 +524,7 @@ class DespachanteTests(unittest.TestCase):
         assert '2048kbit' in script
         assert '512kbit' in script
         assert 'DROP' in script
+        print script
 
     @mock.patch('os.path.getmtime')
     def test_sin_ultimo_despacho(self, mock):
@@ -729,6 +730,5 @@ class DespachanteTests(unittest.TestCase):
             assert mock_open.called
             assert mock_popen.called
             mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
-            mock_popen.assert_called_with(['/usr/bin/sudo', '/bin/sh',
-                                           Despachante.SCRIPT_FILE])
+            mock_popen.assert_called_with(['/bin/sh', Despachante.SCRIPT_FILE])
             transaction.rollback()

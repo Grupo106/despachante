@@ -80,4 +80,4 @@ class Despachante:
                 if line:
                     f.write(line + '\n')
         # ejecuto script
-        subprocess.Popen(['/usr/bin/sudo', '/bin/sh', self.SCRIPT_FILE])
+        subprocess.Popen(['/bin/sh', self.SCRIPT_FILE])
