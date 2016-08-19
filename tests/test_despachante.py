@@ -729,5 +729,6 @@ class DespachanteTests(unittest.TestCase):
             assert mock_open.called
             assert mock_popen.called
             mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
-            print mock_popen.mock_calls
+            mock_popen.assert_called_with(['/usr/bin/sudo', '/bin/sh',
+                                           Despachante.SCRIPT_FILE])
             transaction.rollback()
