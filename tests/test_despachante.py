@@ -712,8 +712,9 @@ class DespachanteTests(unittest.TestCase):
             assert despachante.hay_cambio_de_politicas() is True
             transaction.rollback()
 
+    @mock.patch('subprocess.Popen')
     @mock.patch.object(jinja2.environment.Template, 'render')
-    def test_despachar(self, mock_render):
+    def test_despachar(self, mock_render, mock_popen):
         '''
         Prueba la creacion y ejecucion del script de politicas.
         '''
@@ -726,5 +727,7 @@ class DespachanteTests(unittest.TestCase):
                 despachante.despachar()
             assert mock_render.called
             assert mock_open.called
+            assert mock_popen.called
             mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
+            print mock_popen.mock_calls
             transaction.rollback()
