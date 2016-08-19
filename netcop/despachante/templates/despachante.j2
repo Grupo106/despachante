@@ -35,10 +35,11 @@
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
     # DEBUG: priorizacion {{ politica.id_politica }}
-    /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
-    /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
-    /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
-    /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+    /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
+    /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+    /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+    {{ loop.index }} fw flowid 1:{{ loop.index }}
     {% for flags in politica.flags() %}
       /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
@@ -48,12 +49,12 @@
   {% elif politica.velocidad_bajada or politica.velocidad_subida %}
     # DEBUG: limitacion {{ politica.id_politica }}
     {% if politica.velocidad_subida %}
-      /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_subida }} prio 4
-      /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+      /sbin/tc class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_subida }} prio 4
+      /sbin/tc filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ loop.index }} fw flowid 1:{{ politica.id_politica }}
     {% endif %}
     {% if politica.velocidad_bajada %}
-      /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ politica.id_politica }} htb rate {{ politica.velocidad_bajada }} prio 4
-      /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ politica.id_politica }}
+      /sbin/tc class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ politica.velocidad_bajada }} prio 4
+      /sbin/tc filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
     {% for flags in politica.flags() %}
       /sbin/iptables -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}

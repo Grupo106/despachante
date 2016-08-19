@@ -4,6 +4,7 @@ Pruebas del despachante de clases de trafico.
 '''
 import unittest
 import mock
+import jinja2
 from datetime import datetime, timedelta
 from mock import Mock, MagicMock
 
@@ -711,7 +712,8 @@ class DespachanteTests(unittest.TestCase):
             assert despachante.hay_cambio_de_politicas() is True
             transaction.rollback()
 
-    def test_despachar(self):
+    @mock.patch.object(jinja2.environment.Template, 'render')
+    def test_despachar(self, mock_render):
         '''
         Prueba la creacion y ejecucion del script de politicas.
         '''
@@ -719,5 +721,10 @@ class DespachanteTests(unittest.TestCase):
             politica1 = models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
             despachante = Despachante()
-            assert despachante.despachar() is None
+            mock_open = mock.mock_open()
+            with mock.patch('netcop.despachante.despachante.open', mock_open):
+                despachante.despachar()
+            assert mock_render.called
+            assert mock_open.called
+            mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
             transaction.rollback()

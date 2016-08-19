@@ -8,16 +8,16 @@ import subprocess
 from . import models, config
 from jinja2 import Environment, PackageLoader
 
-# Nombre del script que se creara para despachar las politicas. Conviene que
-# sea en una carpeta temporal para que se elimine cuando el sistema operativo
-# se reinicia
-SCRIPT_FILE = '/tmp/netcop-despachar-politicas'
-
 class Despachante:
     '''
     Traduce politicas de usuario en un script bash que sera interpretado por el
     sistema operativo.
     '''
+
+    # Nombre del script que se creara para despachar las politicas. Conviene
+    # que sea en una carpeta temporal para que se elimine cuando el sistema
+    # operativo se reinicia
+    SCRIPT_FILE = '/tmp/netcop-despachar-politicas'
 
     @property
     def fecha_ultimo_despacho(self):
@@ -26,7 +26,7 @@ class Despachante:
         Unix-Time. Devuelve None si no se encontro despacho anterior.
         '''
         try:
-            return os.path.getmtime(SCRIPT_FILE)
+            return os.path.getmtime(self.SCRIPT_FILE)
         except OSError:
             return None
 
@@ -74,10 +74,10 @@ class Despachante:
                                  if_outside=config.NETCOP['outside'],
                                  if_inside=config.NETCOP['inside'])
         # escribo script en el archivo
-        with open(SCRIPT_FILE, 'w') as f:
+        with open(self.SCRIPT_FILE, 'w') as f:
             for line in script.split('\n'):
                 line = line.strip()
                 if line:
                     f.write(line + '\n')
         # ejecuto script
-        subprocess.Popen(['/bin/sh', SCRIPT_FILE]) 
+        subprocess.Popen(['/bin/sh', self.SCRIPT_FILE]) 
