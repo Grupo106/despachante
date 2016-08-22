@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
+import syslog
 import argparse
+from netcop.despachante import Despachante, models
  
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--temporizado",
@@ -9,13 +12,23 @@ parser.add_argument("-t", "--temporizado",
                     action="store_true")
 args = parser.parse_args()
 
-print args
-
-from netcop.despachante import Despachante
-d = Despachante() 
-if not args.temporizado:
-    d.despachar()
-elif d.despacho_necesario():
-    d.despachar()
-else:
-    print("No hay necesidad de despacho.")
+try:
+    syslog.openlog('despachante')
+    models.db.connect()
+    d = Despachante() 
+    if not args.temporizado:
+        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
+        d.despachar()
+    elif d.despacho_necesario():
+        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
+        d.despachar()
+    else:
+        print("No hay necesidad de despacho.")
+except Exception as inst:
+    syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % inst)
+    sys.exit(1)
+finally:
+    syslog.closelog()
+    if not models.db.is_closed():
+        models.db.close()
+    
