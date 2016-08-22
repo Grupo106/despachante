@@ -524,7 +524,6 @@ class DespachanteTests(unittest.TestCase):
         assert '2048kbit' in script
         assert '512kbit' in script
         assert 'DROP' in script
-        print script
 
     @mock.patch('os.path.getmtime')
     def test_sin_ultimo_despacho(self, mock):
