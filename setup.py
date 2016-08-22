@@ -10,7 +10,6 @@ setup(
     url='https://github.com/grupo106/despachante',
     description='Despachante de politicas de usuario',
     long_description=open('README.md').read(),
-    include_package_data = True,
     package_data = {
         # Incluir templates de Jinja2
         '': ['*.j2'],
