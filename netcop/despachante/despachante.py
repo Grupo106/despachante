@@ -63,6 +63,21 @@ class Despachante:
         politicas = models.Politica.select()
         return [politica for politica in politicas if politica.activa(fecha)]
 
+    def despacho_necesario(self):
+        '''
+        Devuelve verdadero en caso que sea necesario un nuevo despacho.
+
+        Sera necesario un nuevo despacho cuando no exista un despacho anterior,
+        o cuando existan reglas temporales y haya que activar o desactivar
+        politicas debido al paso del tiempo.
+        '''
+        return (
+            self.fecha_ultimo_despacho is None or (
+                    self.hay_reglas_temporales() and 
+                    self.hay_cambio_de_politicas()
+            )
+         )
+
     def despachar(self):
         '''
         Genera el script bash con las politicas activas en este momento y lo
