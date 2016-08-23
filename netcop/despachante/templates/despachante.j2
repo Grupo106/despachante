@@ -18,10 +18,10 @@ IPTABLES="/usr/bin/sudo /sbin/iptables"
 TC="/usr/bin/sudo /sbin/tc"
 
 {# Limpia reglas previas #}
-$IPTABLES -P INPUT ACCEPT
+$IPTABLES -P FORWARD ACCEPT
 $IPTABLES -F
-$IPTABLES -A INPUT -i lo -j ACCEPT
-$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+$IPTABLES -A FORWARD -i lo -j ACCEPT
+$IPTABLES -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 $TC qdisc del dev {{ if_outside }} root
 $TC qdisc del dev {{ if_inside }} root
 
@@ -65,7 +65,7 @@ $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate 
   {% else %}
     # DEBUG: restriccion {{ politica.id_politica }}
     {% for flags in politica.flags() %}
-      $IPTABLES -A INPUT {{ flags }} -j DROP
+      $IPTABLES -A FORWARD {{ flags }} -j DROP
     {% endfor %}
   {% endif %}
 {% endfor %}
