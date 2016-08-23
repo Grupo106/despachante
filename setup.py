@@ -2,11 +2,12 @@ from setuptools import setup
 
 setup(
     name='despachante',
-    version='0.1.0',
+    version='0.2.0',
     author='Yonatan Romero',
     author_email='yromero@openmailbox.org',
     keywords='netcop despachante',
     packages=['netcop.despachante', 'netcop.despachante.templates'],
+    namespace_packages = ['netcop'],
     url='https://github.com/grupo106/despachante',
     description='Despachante de politicas de usuario',
     long_description=open('README.md').read(),
