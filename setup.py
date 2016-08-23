@@ -7,9 +7,9 @@ setup(
     author_email='yromero@openmailbox.org',
     keywords='netcop despachante',
     packages=['netcop.despachante', 'netcop.despachante.templates'],
-    namespace_packages = ['netcop'],
     url='https://github.com/grupo106/despachante',
-    description='Despachante de politicas de usuario',
+    namespace_packages = ['netcop'],
+   description='Despachante de politicas de usuario',
     long_description=open('README.md').read(),
     package_data = {
         # Incluir templates de Jinja2
