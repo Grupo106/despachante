@@ -64,7 +64,7 @@ $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate 
   {% else %}
     # DEBUG: restriccion {{ politica.id_politica }}
     {% for flags in politica.flags() %}
-      $IPTABLES -A FORWARD {{ flags }} -j DROP
+      $IPTABLES -A FORWARD {{ flags }} -j REJECT
     {% endfor %}
   {% endif %}
 {% endfor %}
