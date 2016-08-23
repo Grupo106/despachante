@@ -4,9 +4,11 @@ Pruebas del despachante de clases de trafico.
 '''
 import unittest
 import mock
+import jinja2
+from datetime import datetime, timedelta
 from mock import Mock, MagicMock
 
-from netcop.despachante import models, config
+from netcop.despachante import models, config, Despachante
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -522,3 +524,210 @@ class DespachanteTests(unittest.TestCase):
         assert '2048kbit' in script
         assert '512kbit' in script
         assert 'DROP' in script
+
+    @mock.patch('os.path.getmtime')
+    def test_sin_ultimo_despacho(self, mock):
+        '''
+        Prueba obtener la fecha de ultimo despacho, sin despachos anteriores.
+        Debe devolver None.
+        '''
+        despachante = Despachante()
+        mock.side_effect = OSError()
+        assert despachante.fecha_ultimo_despacho is None
+        assert mock.called
+
+    @mock.patch('os.path.getmtime')
+    def test_ultimo_despacho(self, mock):
+        '''
+        Prueba obtener la fecha de ultimo despacho.
+        '''
+        despachante = Despachante()
+        mock.return_value = 1471446575.5391228
+        assert despachante.fecha_ultimo_despacho == 1471446575.5391228
+        assert mock.called
+
+    @mock.patch('netcop.despachante.models.RangoHorario.select')
+    def test_hay_reglas_temporales(self, mock_select):
+        '''
+        Prueba que devuelva verdadero cuando haya reglas que dependan del
+        tiempo.
+        '''
+        # preparo los mocks
+        despachante = Despachante()
+        mock_exists = Mock()
+        mock_select.return_value = Mock()
+        mock_select.return_value.exists = mock_exists
+        # pruebo en caso de que no existan reglas temporales
+        mock_exists.return_value = False
+        assert not despachante.hay_reglas_temporales()
+        assert mock_exists.called
+        # pruebo en caso de que si existan reglas temporales
+        mock_exists.reset_mock()
+        mock_exists.return_value = True
+        assert despachante.hay_reglas_temporales()
+        assert mock_exists.called
+
+    def test_politicas_activas_actual(self):
+        '''
+        Obtiene lista de politicas activas en tiempo actual.
+
+        politica1: Rango horario valido (debe mostrarse)
+        politica2: Rango horario invalido (no debe mostrarse)
+        politica3: Sin rango horario (debe mostrarse)
+        '''
+        with models.db.atomic() as transaction:
+            despachante = Despachante()
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            politica3 = models.Politica.create(nombre='politica3')
+            # politica1: rango no valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica1: rango valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=1)).time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now + timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=(now + timedelta(hours=2)).time(),
+            )
+            politicas = despachante.obtener_politicas()
+            assert [_ for _ in politicas if _.nombre == 'politica1']
+            assert not [_ for _ in politicas if _.nombre == 'politica2']
+            assert [_ for _ in politicas if _.nombre == 'politica3']
+            transaction.rollback()
+
+    def test_politicas_activas_especifico(self):
+        '''
+        Obtiene lista de politicas activas en un tiempo especifico.
+
+        politica1: Rango horario valido (debe mostrarse)
+        politica2: Rango horario invalido (no debe mostrarse)
+        politica3: Sin rango horario (debe mostrarse)
+        '''
+        with models.db.atomic() as transaction:
+            despachante = Despachante()
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            politica3 = models.Politica.create(nombre='politica3')
+            # politica1: rango no valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            # politica1: rango valido
+            models.RangoHorario.create(
+                politica=politica1,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=2)).time(),
+                hora_fin=now.time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            # politica2: rango no valido
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day + 1,
+                hora_inicial=(now - timedelta(hours=2)).time(),
+                hora_fin=now.time(),
+            )
+            # dos horas atras
+            fecha = now - timedelta(hours=2)
+            politicas = despachante.obtener_politicas(fecha)
+            assert [_ for _ in politicas if _.nombre == 'politica1']
+            assert not [_ for _ in politicas if _.nombre == 'politica2']
+            assert [_ for _ in politicas if _.nombre == 'politica3']
+            transaction.rollback()
+
+    @mock.patch.object(Despachante, 'fecha_ultimo_despacho')
+    def test_hay_cambio_politicas(self, mock):
+        '''
+        Prueba la verificacion de cambios de politicas por rango horario.
+        '''
+        with models.db.atomic() as transaction:
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            # pruebo en caso verdadero
+            ultimo = now - timedelta(minutes=1)
+            mock.__get__ = Mock(return_value=ultimo)
+            despachante = Despachante()
+            assert despachante.hay_cambio_de_politicas() is True
+            # pruebo en caso falso
+            ultimo = now - timedelta(hours=2)
+            mock.__get__ = Mock(return_value=ultimo)
+            assert despachante.hay_cambio_de_politicas() is False
+            transaction.rollback()
+
+    @mock.patch.object(Despachante, 'fecha_ultimo_despacho')
+    def test_hay_cambio_politicas_sin_despacho_anterior(self, mock):
+        '''
+        Prueba la verificacion de cambios de politicas por rango horario en
+        caso de que no haya despacho anterior.
+        '''
+        with models.db.atomic() as transaction:
+            now = datetime.now()
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            models.RangoHorario.create(
+                politica=politica2,
+                dia=now.day,
+                hora_inicial=(now - timedelta(hours=1)).time(),
+                hora_fin=now.time(),
+            )
+            mock.__get__ = Mock(return_value=None)
+            despachante = Despachante()
+            assert despachante.hay_cambio_de_politicas() is True
+            transaction.rollback()
+
+    @mock.patch('subprocess.Popen')
+    @mock.patch.object(jinja2.environment.Template, 'render')
+    def test_despachar(self, mock_render, mock_popen):
+        '''
+        Prueba la creacion y ejecucion del script de politicas.
+        '''
+        with models.db.atomic() as transaction:
+            politica1 = models.Politica.create(nombre='politica1')
+            politica2 = models.Politica.create(nombre='politica2')
+            despachante = Despachante()
+            mock_open = mock.mock_open()
+            with mock.patch('netcop.despachante.despachante.open', mock_open):
+                despachante.despachar()
+            assert mock_render.called
+            assert mock_open.called
+            assert mock_popen.called
+            mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
+            mock_popen.assert_called_with(['/bin/sh', Despachante.SCRIPT_FILE])
+            transaction.rollback()

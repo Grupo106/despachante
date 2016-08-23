@@ -40,8 +40,6 @@ class Default:
         'inside': 'eth1',
     }
 
-global BD_HOST, BD_DATABASE, BD_USER, BD_PASSWORD
-
 config = configparser.ConfigParser()
 config.read(NETCOP_CONFIG)
 
@@ -50,10 +48,12 @@ for section in config.sections():
     conf = dict()
     for item in config.items(section):
         conf[item[0].lower()] = item[1]
-    globals()[section] = conf
+    globals()[section.upper()] = conf
 
 # establece opciones por default
 sections = [a for a in dir(Default) if not a.startswith('__')]
 for section in sections:
     if globals().get(section) is None:
         globals()[section] = getattr(Default, section)
+
+del config, sections

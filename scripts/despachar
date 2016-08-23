@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import sys
+import syslog
+import argparse
+from netcop.despachante import Despachante, models
+ 
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--temporizado",
+                    help="Ejecuta el script en modo temporizado. Si no es "
+                         "necesario un despacho nuevo, no hace nada.",
+                    action="store_true")
+args = parser.parse_args()
+
+try:
+    syslog.openlog('despachante')
+    models.db.connect()
+    d = Despachante() 
+    if not args.temporizado:
+        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
+        d.despachar()
+    elif d.despacho_necesario():
+        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
+        d.despachar()
+    else:
+        print("No hay necesidad de despacho.")
+except Exception as inst:
+    syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % inst)
+    sys.exit(1)
+finally:
+    syslog.closelog()
+    if not models.db.is_closed():
+        models.db.close()
+    

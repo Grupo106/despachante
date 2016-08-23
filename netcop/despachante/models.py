@@ -8,6 +8,7 @@ necesidad de escribir codigo SQL.
 '''
 import itertools
 import peewee as models
+from datetime import datetime
 from . import config
 
 # Identificador de grupo para servicios que esten en la red local
@@ -304,6 +305,33 @@ class Politica(models.Model):
                 lista.append(dict(flags1, **flags2))
             return lista
 
+
+    def activa(self, fecha=None):
+        '''
+        Devuelve verdadero si la politica esta activa en la fecha pasada por
+        parametro.
+
+        Si no se pasa ninguna fecha por parametro, utiliza la fecha actual.
+        '''
+        # si no tiene restriccion de horarios, esta activa
+        if self.horarios.count() == 0:
+            return True
+        fecha = fecha or datetime.now()
+        # Si existe algun rango activo
+        for horario in self.horarios:
+            if fecha in horario:
+                return True
+        return False
+
+    def __eq__(self, item):
+        return self.id_politica == item.id_politica
+
+    def __hash__(self):
+        return hash(self.id_politica)
+
+    def __str__(self):
+        return self.nombre
+
     class Meta:
         database = db
         db_table = u'politica'
@@ -399,6 +427,12 @@ class RangoHorario(models.Model):
     hora_inicial = models.TimeField()
     hora_fin = models.TimeField()
 
+    def __contains__(self, item):
+        '''
+        Devuelve verdadero si la fecha-hora (item) esta dentro del rango.
+        '''
+        return (item.day == self.dia and
+                self.hora_inicial <= item.time() < self.hora_fin)
 
     class Meta:
         database = db

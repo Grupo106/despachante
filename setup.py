@@ -6,10 +6,14 @@ setup(
     author='Yonatan Romero',
     author_email='yromero@openmailbox.org',
     keywords='netcop despachante',
-    packages=['netcop'],
+    packages=['netcop.despachante', 'netcop.despachante.templates'],
     url='https://github.com/grupo106/despachante',
     description='Despachante de politicas de usuario',
     long_description=open('README.md').read(),
+    package_data = {
+        # Incluir templates de Jinja2
+        '': ['*.j2'],
+    },
     install_requires=[
         'peewee>=2.8.1',
         'psycopg2>=2.6.2',
@@ -23,7 +27,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'License :: Freely Distributable',
     ]
