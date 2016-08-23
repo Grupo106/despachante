@@ -13,6 +13,10 @@
 python setup.py install
 ```
 
+## Configuracion
+
+Editar archivo `/etc/netcop/netcop.config`
+
 ## Ejecución
 
 ```sh
