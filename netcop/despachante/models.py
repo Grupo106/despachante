@@ -185,7 +185,8 @@ class Politica(models.Model):
     descripcion = models.CharField(max_length=255, null=True)
     activa = models.BooleanField(default=True)
     prioridad = models.SmallIntegerField(null=True)
-    velocidad_maxima = models.IntegerField(null=True)
+    velocidad_subida = models.IntegerField(null=True)
+    velocidad_bajada = models.IntegerField(null=True)
 
     def __init__(self, *args, **kwargs):
         '''
