@@ -12,7 +12,7 @@ El formato del archivo esperado es
     url_version=http://netcop.com/version
     url_download=http://netcop.com/download
     local_version=/var/local/netcop/version
-    
+
     [database]
     host=
     database=netcop
@@ -23,6 +23,7 @@ El formato del archivo esperado es
 import configparser
 
 NETCOP_CONFIG = '/etc/netcop/netcop.config'
+
 
 # Parametros por defecto
 class Default:

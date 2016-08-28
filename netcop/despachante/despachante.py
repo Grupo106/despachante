@@ -8,6 +8,7 @@ import subprocess
 from . import models, config
 from jinja2 import Environment, PackageLoader
 
+
 class Despachante:
     '''
     Traduce politicas de usuario en un script bash que sera interpretado por el
@@ -73,7 +74,7 @@ class Despachante:
         '''
         return (
             self.fecha_ultimo_despacho is None or (
-                    self.hay_reglas_temporales() and 
+                    self.hay_reglas_temporales() and
                     self.hay_cambio_de_politicas()
             )
          )

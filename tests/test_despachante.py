@@ -6,9 +6,9 @@ import unittest
 import mock
 import jinja2
 from datetime import datetime, timedelta
-from mock import Mock, MagicMock
+from mock import Mock
 
-from netcop.despachante import models, config, Despachante
+from netcop.despachante import models, Despachante
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -41,7 +41,7 @@ class DespachanteTests(unittest.TestCase):
         )
         p = {Param.MAC: set()}
         # llamo metodo a probar
-        flags = objetivo.obtener_parametros(p)
+        objetivo.obtener_parametros(p)
         # verifico que todo este bien
         assert '00:00:00:00:00:01' in p[Param.MAC]
         # preparo datos, debe ignorar que se especifico como destino
@@ -50,7 +50,7 @@ class DespachanteTests(unittest.TestCase):
             tipo=models.Objetivo.DESTINO
         )
         # llamo metodo a probar
-        flags = objetivo.obtener_parametros(p)
+        objetivo.obtener_parametros(p)
         # verifico que todo este bien
         assert '00:00:00:00:00:02' in p[Param.MAC]
 
@@ -89,7 +89,7 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.ORIGEN
             )
             # llamo metodo a probar
-            flags = objetivo.obtener_parametros(p)
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
             assert '192.168.1.0/24' in p[Param.IP_ORIGEN]
             assert '192.168.2.0/24' in p[Param.IP_ORIGEN]
@@ -100,7 +100,7 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.DESTINO
             )
             # llamo metodo a probar
-            flags = objetivo.obtener_parametros(p)
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
             assert '192.168.1.0/24' in p[Param.IP_DESTINO]
             assert '192.168.2.0/24' in p[Param.IP_DESTINO]
@@ -580,7 +580,7 @@ class DespachanteTests(unittest.TestCase):
             now = datetime.now()
             politica1 = models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
-            politica3 = models.Politica.create(nombre='politica3')
+            models.Politica.create(nombre='politica3')
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
@@ -628,7 +628,7 @@ class DespachanteTests(unittest.TestCase):
             now = datetime.now()
             politica1 = models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
-            politica3 = models.Politica.create(nombre='politica3')
+            models.Politica.create(nombre='politica3')
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
@@ -672,7 +672,7 @@ class DespachanteTests(unittest.TestCase):
         '''
         with models.db.atomic() as transaction:
             now = datetime.now()
-            politica1 = models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
@@ -699,7 +699,7 @@ class DespachanteTests(unittest.TestCase):
         '''
         with models.db.atomic() as transaction:
             now = datetime.now()
-            politica1 = models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
@@ -719,8 +719,8 @@ class DespachanteTests(unittest.TestCase):
         Prueba la creacion y ejecucion del script de politicas.
         '''
         with models.db.atomic() as transaction:
-            politica1 = models.Politica.create(nombre='politica1')
-            politica2 = models.Politica.create(nombre='politica2')
+            models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica2')
             despachante = Despachante()
             mock_open = mock.mock_open()
             with mock.patch('netcop.despachante.despachante.open', mock_open):

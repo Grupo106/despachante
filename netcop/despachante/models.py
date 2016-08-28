@@ -22,6 +22,7 @@ db = models.PostgresqlDatabase(config.DATABASE['database'],
                                user=config.DATABASE['user'],
                                password=config.DATABASE['password'])
 
+
 class Flag:
     '''
     Declara flags que utiliza iptables.
@@ -198,7 +199,6 @@ class Politica(models.Model):
         }
         return super(Politica, self).__init__(*args, **kwargs)
 
-
     def flags_dict(self):
         '''
         Devuelve una lista de diccionarios con los flags necesarios para
@@ -229,7 +229,6 @@ class Politica(models.Model):
                     linea.append("%s %s" % (key, value))
             lista.append(" ".join(linea))
         return lista
-
 
     def flags_mac(self, lista):
         if not self.hay_macs():
@@ -305,7 +304,6 @@ class Politica(models.Model):
             for flags1, flags2 in itertools.product(lista1, lista2):
                 lista.append(dict(flags1, **flags2))
             return lista
-
 
     def activa(self, fecha=None):
         '''
@@ -404,7 +402,6 @@ class Objetivo(models.Model):
                     return Param.UDP_ORIGEN
                 else:
                     return Param.UDP_DESTINO
-
 
     class Meta:
         database = db
