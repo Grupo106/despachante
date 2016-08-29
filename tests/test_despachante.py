@@ -512,7 +512,96 @@ class DespachanteTests(unittest.TestCase):
         assert '512kbit' in script
         assert 'REJECT' in script
 
-    @unittest.expectedFailure
+    def test_parametro_puerto_origen_tcp_bajada(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto origen TCP con velocidad maxima de bajada
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.ORIGEN)
+        politica = models.Politica(velocidad_bajada=1024)
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_DESTINO
+
+    def test_parametro_puerto_origen_tcp_subida(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto origen TCP con velocidad maxima de subida
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.ORIGEN)
+        politica = models.Politica(velocidad_subida=1024)
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_ORIGEN
+
+    def test_parametro_puerto_destino_tcp_bajada(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto destino TCP con velocidad maxima de bajada
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.DESTINO)
+        politica = models.Politica(velocidad_bajada=1024)
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_ORIGEN
+
+    def test_parametro_puerto_destino_tcp_subida(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto destino TCP con velocidad maxima de subida
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.DESTINO)
+        politica = models.Politica(velocidad_subida=1024)
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_DESTINO
+
+    def test_parametro_puerto_destino_tcp(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto destino TCP sin limitacion
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.DESTINO)
+        politica = models.Politica()
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_DESTINO
+
+    def test_parametro_puerto_origen_tcp(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto origen TCP sin limitacion
+        '''
+        objetivo = models.Objetivo(tipo=models.Objetivo.ORIGEN)
+        politica = models.Politica()
+        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
+        parametro = objetivo.definir_parametro_puerto(
+            protocolo=models.Protocolo.TCP,
+            puerto=puerto,
+            politica=politica)
+        assert parametro == models.Param.TCP_ORIGEN
+
     def test_template_limitacion_puerto(self):
         '''
         Prueba la generacion del template de limitacion de puertos.
@@ -520,7 +609,7 @@ class DespachanteTests(unittest.TestCase):
         # preparo datos
         objetivo_puerto = Mock()
         objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
-            Param.TCP_DESTINO: [80, 443],
+            Param.TCP_ORIGEN: [80, 443],
         })
         limitacion = models.Politica(id_politica=1063,
                                      velocidad_bajada='2048',
@@ -534,7 +623,6 @@ class DespachanteTests(unittest.TestCase):
         assert '2048kbit' in script
         assert '512kbit' in script
         assert 'MARK' in script
-        print script
         assert models.Flag.PUERTO_ORIGEN + ' 80' in script
         assert models.Flag.PUERTO_ORIGEN + ' 443' in script
 

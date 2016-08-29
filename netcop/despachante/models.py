@@ -396,15 +396,27 @@ class Objetivo(models.Model):
         if protocolo == Protocolo.TCP:
             if puerto.protocolo in (0, Protocolo.TCP):
                 if self.tipo == Objetivo.ORIGEN:
-                    return Param.TCP_ORIGEN if not politica.velocidad_bajada else Param.TCP_DESTINO
+                    if politica.velocidad_bajada:
+                        return Param.TCP_DESTINO
+                    else:
+                        return Param.TCP_ORIGEN
                 else:
-                    return Param.TCP_DESTINO if not politica.velocidad_bajada else Param.TCP_ORIGEN
+                    if politica.velocidad_bajada:
+                        return Param.TCP_ORIGEN
+                    else:
+                        return Param.TCP_DESTINO
         elif protocolo == Protocolo.UDP:
             if puerto.protocolo in (0, Protocolo.UDP):
                 if self.tipo == Objetivo.ORIGEN:
-                    return Param.UDP_ORIGEN if not politica.velocidad_bajada else Param.UDP_DESTINO
+                    if politica.velocidad_bajada:
+                        return Param.UDP_DESTINO
+                    else:
+                        return Param.UDP_ORIGEN
                 else:
-                    return Param.UDP_DESTINO if not politica.velocidad_bajada else Param.UDP_ORIGEN
+                    if politica.velocidad_bajada:
+                        return Param.UDP_ORIGEN
+                    else:
+                        return Param.UDP_DESTINO
 
     class Meta:
         database = db
