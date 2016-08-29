@@ -383,11 +383,12 @@ class Objetivo(models.Model):
         if self.clase and self.clase.puertos.count() > 0:
             for item in self.clase.puertos:
                 for proto in (Protocolo.TCP, Protocolo.UDP):
-                    param = self.definir_parametro_puerto(proto, item.puerto)
+                    param = self.definir_parametro_puerto(proto, item.puerto,
+                                                          politica)
                     if param:
                         politica.parametros[param].add(item.puerto.numero)
 
-    def definir_parametro_puerto(self, protocolo, puerto):
+    def definir_parametro_puerto(self, protocolo, puerto, politica):
         '''
         Defino el parametro que se va cargar segun si el objetivo es origen o
         destino y el protocolo del puerto.
@@ -395,15 +396,15 @@ class Objetivo(models.Model):
         if protocolo == Protocolo.TCP:
             if puerto.protocolo in (0, Protocolo.TCP):
                 if self.tipo == Objetivo.ORIGEN:
-                    return Param.TCP_ORIGEN
+                    return Param.TCP_ORIGEN if not politica.velocidad_bajada else Param.TCP_DESTINO
                 else:
-                    return Param.TCP_DESTINO
+                    return Param.TCP_DESTINO if not politica.velocidad_bajada else Param.TCP_ORIGEN
         elif protocolo == Protocolo.UDP:
             if puerto.protocolo in (0, Protocolo.UDP):
                 if self.tipo == Objetivo.ORIGEN:
-                    return Param.UDP_ORIGEN
+                    return Param.UDP_ORIGEN if not politica.velocidad_bajada else Param.UDP_DESTINO
                 else:
-                    return Param.UDP_DESTINO
+                    return Param.UDP_DESTINO if not politica.velocidad_bajada else Param.UDP_ORIGEN
 
     class Meta:
         database = db

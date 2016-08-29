@@ -512,6 +512,32 @@ class DespachanteTests(unittest.TestCase):
         assert '512kbit' in script
         assert 'REJECT' in script
 
+    @unittest.expectedFailure
+    def test_template_limitacion_puerto(self):
+        '''
+        Prueba la generacion del template de limitacion de puertos.
+        '''
+        # preparo datos
+        objetivo_puerto = Mock()
+        objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
+            Param.TCP_DESTINO: [80, 443],
+        })
+        limitacion = models.Politica(id_politica=1063,
+                                     velocidad_bajada='2048',
+                                     velocidad_subida='512')
+        limitacion.objetivos = [objetivo_puerto]
+        template = (Environment(loader=PackageLoader('netcop.despachante'))
+                    .get_template("despachante.j2"))
+        script = template.render(politicas=[limitacion],
+                                 if_outside='eth0',
+                                 if_inside='eth1')
+        assert '2048kbit' in script
+        assert '512kbit' in script
+        assert 'MARK' in script
+        print script
+        assert models.Flag.PUERTO_ORIGEN + ' 80' in script
+        assert models.Flag.PUERTO_ORIGEN + ' 443' in script
+
     @mock.patch('os.path.getmtime')
     def test_sin_ultimo_despacho(self, mock):
         '''
