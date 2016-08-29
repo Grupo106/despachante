@@ -40,7 +40,7 @@ $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate 
     $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% for flags in politica.flags() %}
-      $IPTABLES -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+      $IPTABLES -A OUTPUT -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
 
   {# Limitacion #}
@@ -56,7 +56,7 @@ $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate 
       $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
     {% for flags in politica.flags() %}
-      $IPTABLES -A PREROUTING -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+      $IPTABLES -A OUTPUT -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
     {% endfor %}
 
   {# Restriccion #}
