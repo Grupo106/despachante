@@ -6,9 +6,9 @@ import unittest
 import mock
 import jinja2
 from datetime import datetime, timedelta
-from mock import Mock, MagicMock
+from mock import Mock
 
-from netcop.despachante import models, config, Despachante
+from netcop.despachante import models, Despachante
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -39,20 +39,20 @@ class DespachanteTests(unittest.TestCase):
             direccion_fisica='00:00:00:00:00:01',
             tipo=models.Objetivo.ORIGEN
         )
-        p = {Param.MAC: set()}
+        p = models.Politica()
         # llamo metodo a probar
-        flags = objetivo.obtener_parametros(p)
+        objetivo.obtener_parametros(p)
         # verifico que todo este bien
-        assert '00:00:00:00:00:01' in p[Param.MAC]
+        assert '00:00:00:00:00:01' in p.parametros[Param.MAC]
         # preparo datos, debe ignorar que se especifico como destino
         objetivo = models.Objetivo(
             direccion_fisica='00:00:00:00:00:02',
             tipo=models.Objetivo.DESTINO
         )
         # llamo metodo a probar
-        flags = objetivo.obtener_parametros(p)
+        objetivo.obtener_parametros(p)
         # verifico que todo este bien
-        assert '00:00:00:00:00:02' in p[Param.MAC]
+        assert '00:00:00:00:00:02' in p.parametros[Param.MAC]
 
     def test_flags_objetivo_redes(self):
         '''
@@ -80,8 +80,7 @@ class DespachanteTests(unittest.TestCase):
             for red in cidr:
                 models.ClaseCIDR.create(clase=clase, cidr=red,
                                         grupo=models.OUTSIDE)
-            p = {Param.IP_ORIGEN: set(),
-                 Param.IP_DESTINO: set()}
+            p = models.Politica()
 
             # creo objetivo como origen
             objetivo = models.Objetivo(
@@ -89,10 +88,10 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.ORIGEN
             )
             # llamo metodo a probar
-            flags = objetivo.obtener_parametros(p)
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in p[Param.IP_ORIGEN]
-            assert '192.168.2.0/24' in p[Param.IP_ORIGEN]
+            assert '192.168.1.0/24' in p.parametros[Param.IP_ORIGEN]
+            assert '192.168.2.0/24' in p.parametros[Param.IP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -100,10 +99,10 @@ class DespachanteTests(unittest.TestCase):
                 tipo=models.Objetivo.DESTINO
             )
             # llamo metodo a probar
-            flags = objetivo.obtener_parametros(p)
+            objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in p[Param.IP_DESTINO]
-            assert '192.168.2.0/24' in p[Param.IP_DESTINO]
+            assert '192.168.1.0/24' in p.parametros[Param.IP_DESTINO]
+            assert '192.168.2.0/24' in p.parametros[Param.IP_DESTINO]
 
             transaction.rollback()
 
@@ -138,12 +137,7 @@ class DespachanteTests(unittest.TestCase):
                 models.ClasePuerto.create(clase=clase, puerto=item,
                                           grupo=models.OUTSIDE)
 
-            p = {
-                Param.TCP_ORIGEN: set(),
-                Param.TCP_DESTINO: set(),
-                Param.UDP_ORIGEN: set(),
-                Param.UDP_DESTINO: set(),
-            }
+            p = models.Politica()
 
             # creo objetivo como origen
             objetivo = models.Objetivo(
@@ -153,10 +147,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert 53 in p[Param.UDP_ORIGEN]
-            assert 22 in p[Param.TCP_ORIGEN]
-            assert 80 in p[Param.UDP_ORIGEN]
-            assert 80 in p[Param.TCP_ORIGEN]
+            assert 53 in p.parametros[Param.UDP_ORIGEN]
+            assert 22 in p.parametros[Param.TCP_ORIGEN]
+            assert 80 in p.parametros[Param.UDP_ORIGEN]
+            assert 80 in p.parametros[Param.TCP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -166,10 +160,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert 53 in p[Param.UDP_DESTINO]
-            assert 22 in p[Param.TCP_DESTINO]
-            assert 80 in p[Param.UDP_DESTINO]
-            assert 80 in p[Param.TCP_DESTINO]
+            assert 53 in p.parametros[Param.UDP_DESTINO]
+            assert 22 in p.parametros[Param.TCP_DESTINO]
+            assert 80 in p.parametros[Param.UDP_DESTINO]
+            assert 80 in p.parametros[Param.TCP_DESTINO]
 
             transaction.rollback()
 
@@ -213,14 +207,7 @@ class DespachanteTests(unittest.TestCase):
                 models.ClasePuerto.create(clase=clase, puerto=item,
                                           grupo=models.OUTSIDE)
 
-            p = {
-                Param.IP_ORIGEN: set(),
-                Param.IP_DESTINO: set(),
-                Param.TCP_ORIGEN: set(),
-                Param.TCP_DESTINO: set(),
-                Param.UDP_ORIGEN: set(),
-                Param.UDP_DESTINO: set(),
-            }
+            p = models.Politica()
 
             # creo objetivo como origen
             objetivo = models.Objetivo(
@@ -230,10 +217,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in p[Param.IP_ORIGEN]
-            assert '192.168.2.0/24' in p[Param.IP_ORIGEN]
-            assert 53 in p[Param.UDP_ORIGEN]
-            assert 22 in p[Param.TCP_ORIGEN]
+            assert '192.168.1.0/24' in p.parametros[Param.IP_ORIGEN]
+            assert '192.168.2.0/24' in p.parametros[Param.IP_ORIGEN]
+            assert 53 in p.parametros[Param.UDP_ORIGEN]
+            assert 22 in p.parametros[Param.TCP_ORIGEN]
 
             # creo objetivo como destino
             objetivo = models.Objetivo(
@@ -243,10 +230,10 @@ class DespachanteTests(unittest.TestCase):
             # llamo metodo a probar
             objetivo.obtener_parametros(p)
             # verifico que todo este bien
-            assert '192.168.1.0/24' in p[Param.IP_DESTINO]
-            assert '192.168.2.0/24' in p[Param.IP_DESTINO]
-            assert 53 in p[Param.UDP_DESTINO]
-            assert 22 in p[Param.TCP_DESTINO]
+            assert '192.168.1.0/24' in p.parametros[Param.IP_DESTINO]
+            assert '192.168.2.0/24' in p.parametros[Param.IP_DESTINO]
+            assert 53 in p.parametros[Param.UDP_DESTINO]
+            assert 22 in p.parametros[Param.TCP_DESTINO]
 
             transaction.rollback()
 
@@ -257,11 +244,11 @@ class DespachanteTests(unittest.TestCase):
         '''
         # preparo datos
         objetivo_ip = Mock()
-        objetivo_ip.obtener_parametros = lambda x: x.update({
+        objetivo_ip.obtener_parametros = lambda x: x.parametros.update({
             Param.IP_DESTINO: ['192.168.0.0/24', '192.168.1.0/24'],
         })
         objetivo_puerto = Mock()
-        objetivo_puerto.obtener_parametros = lambda x: x.update({
+        objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
             Param.TCP_DESTINO: [22],
             Param.UDP_DESTINO: [53]
         })
@@ -308,15 +295,15 @@ class DespachanteTests(unittest.TestCase):
         '''
         # preparo datos
         objetivo_mac = Mock()
-        objetivo_mac.obtener_parametros = lambda x: x.update({
+        objetivo_mac.obtener_parametros = lambda x: x.parametros.update({
             Param.MAC: ['10:00:00:00:00:00', '20:00:00:00:00:00']
         })
         objetivo_ip = Mock()
-        objetivo_ip.obtener_parametros = lambda x: x.update({
+        objetivo_ip.obtener_parametros = lambda x: x.parametros.update({
             Param.IP_ORIGEN: ['192.168.0.0/24', '192.168.1.0/24'],
         })
         objetivo_puerto = Mock()
-        objetivo_puerto.obtener_parametros = lambda x: x.update({
+        objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
             Param.TCP_ORIGEN: [22],
             Param.UDP_ORIGEN: [53]
         })
@@ -397,16 +384,16 @@ class DespachanteTests(unittest.TestCase):
         '''
         # preparo datos
         objetivo_mac = Mock()
-        objetivo_mac.obtener_parametros = lambda x: x.update({
+        objetivo_mac.obtener_parametros = lambda x: x.parametros.update({
             Param.MAC: ['10:00:00:00:00:00', '20:00:00:00:00:00']
         })
         objetivo_ip = Mock()
-        objetivo_ip.obtener_parametros = lambda x: x.update({
+        objetivo_ip.obtener_parametros = lambda x: x.parametros.update({
             Param.IP_ORIGEN: ['192.168.0.0/24', '192.168.1.0/24'],
             Param.IP_DESTINO: ['172.16.0.0/24', '172.16.1.0/24'],
         })
         objetivo_puerto = Mock()
-        objetivo_puerto.obtener_parametros = lambda x: x.update({
+        objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
             Param.TCP_ORIGEN: [22],
             Param.UDP_ORIGEN: [53],
             Param.TCP_DESTINO: [80, 443],
@@ -486,16 +473,16 @@ class DespachanteTests(unittest.TestCase):
         '''
         # preparo datos
         objetivo_mac = Mock()
-        objetivo_mac.obtener_parametros = lambda x: x.update({
+        objetivo_mac.obtener_parametros = lambda x: x.parametros.update({
             Param.MAC: ['10:00:00:00:00:00', '20:00:00:00:00:00']
         })
         objetivo_ip = Mock()
-        objetivo_ip.obtener_parametros = lambda x: x.update({
+        objetivo_ip.obtener_parametros = lambda x: x.parametros.update({
             Param.IP_ORIGEN: ['192.168.0.0/24', '192.168.1.0/24'],
             Param.IP_DESTINO: ['172.16.0.0/24', '172.16.1.0/24'],
         })
         objetivo_puerto = Mock()
-        objetivo_puerto.obtener_parametros = lambda x: x.update({
+        objetivo_puerto.obtener_parametros = lambda x: x.parametros.update({
             Param.TCP_ORIGEN: [22],
             Param.UDP_ORIGEN: [53],
             Param.TCP_DESTINO: [80, 443],
@@ -580,7 +567,7 @@ class DespachanteTests(unittest.TestCase):
             now = datetime.now()
             politica1 = models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
-            politica3 = models.Politica.create(nombre='politica3')
+            models.Politica.create(nombre='politica3')
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
@@ -628,7 +615,7 @@ class DespachanteTests(unittest.TestCase):
             now = datetime.now()
             politica1 = models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
-            politica3 = models.Politica.create(nombre='politica3')
+            models.Politica.create(nombre='politica3')
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
@@ -672,7 +659,7 @@ class DespachanteTests(unittest.TestCase):
         '''
         with models.db.atomic() as transaction:
             now = datetime.now()
-            politica1 = models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
@@ -699,7 +686,7 @@ class DespachanteTests(unittest.TestCase):
         '''
         with models.db.atomic() as transaction:
             now = datetime.now()
-            politica1 = models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica1')
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
@@ -719,8 +706,8 @@ class DespachanteTests(unittest.TestCase):
         Prueba la creacion y ejecucion del script de politicas.
         '''
         with models.db.atomic() as transaction:
-            politica1 = models.Politica.create(nombre='politica1')
-            politica2 = models.Politica.create(nombre='politica2')
+            models.Politica.create(nombre='politica1')
+            models.Politica.create(nombre='politica2')
             despachante = Despachante()
             mock_open = mock.mock_open()
             with mock.patch('netcop.despachante.despachante.open', mock_open):

@@ -193,7 +193,7 @@ class Politica(models.Model):
         '''
         Inicializa diccionario de parametros.
         '''
-        self.params = {
+        self.parametros = {
             getattr(Param, attr): set()
             for attr in dir(Param) if not attr.startswith('__')
         }
@@ -206,7 +206,7 @@ class Politica(models.Model):
         política.
         '''
         for objetivo in self.objetivos:
-            objetivo.obtener_parametros(self.params)
+            objetivo.obtener_parametros(self)
 
         return self.flags_mac(
             self.flags_puerto(
@@ -234,7 +234,7 @@ class Politica(models.Model):
         if not self.hay_macs():
             return lista
         flags = [{Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
-                 for mac in self.params[Param.MAC]]
+                 for mac in self.parametros[Param.MAC]]
         return self.producto_cartesiano(lista, flags)
 
     def flags_puerto(self, lista):
@@ -246,21 +246,22 @@ class Politica(models.Model):
         )
         ret = list()
         for proto, origen, destino in PUERTOS:
-            if not self.params[destino]:
-                for sport in self.params[origen]:
+            if not self.parametros[destino]:
+                for sport in self.parametros[origen]:
                     ret.append({
                         Flag.PROTOCOLO: proto,
                         Flag.PUERTO_ORIGEN: sport,
                     })
-            elif not self.params[origen]:
-                for dport in self.params[destino]:
+            elif not self.parametros[origen]:
+                for dport in self.parametros[destino]:
                     ret.append({
                         Flag.PROTOCOLO: proto,
                         Flag.PUERTO_DESTINO: dport,
                     })
             else:
-                for sport, dport in itertools.product(self.params[origen],
-                                                      self.params[destino]):
+                for sport, dport in itertools.product(
+                        self.parametros[origen],
+                        self.parametros[destino]):
                     ret.append({
                         Flag.PROTOCOLO: proto,
                         Flag.PUERTO_ORIGEN: sport,
@@ -272,24 +273,25 @@ class Politica(models.Model):
         if not self.hay_redes():
             return lista
         flags = dict()
-        if self.params[Param.IP_ORIGEN]:
-            flags[Flag.IP_ORIGEN] = ",".join(self.params[Param.IP_ORIGEN])
-        if self.params[Param.IP_DESTINO]:
-            flags[Flag.IP_DESTINO] = ",".join(self.params[Param.IP_DESTINO])
+        if self.parametros[Param.IP_ORIGEN]:
+            flags[Flag.IP_ORIGEN] = ",".join(self.parametros[Param.IP_ORIGEN])
+        if self.parametros[Param.IP_DESTINO]:
+            flags[Flag.IP_DESTINO] = ",".join(
+                self.parametros[Param.IP_DESTINO])
         return self.producto_cartesiano(lista, [flags])
 
     def hay_puertos(self):
-        return (self.params[Param.TCP_ORIGEN] or
-                self.params[Param.TCP_DESTINO] or
-                self.params[Param.UDP_ORIGEN] or
-                self.params[Param.UDP_DESTINO])
+        return (self.parametros[Param.TCP_ORIGEN] or
+                self.parametros[Param.TCP_DESTINO] or
+                self.parametros[Param.UDP_ORIGEN] or
+                self.parametros[Param.UDP_DESTINO])
 
     def hay_macs(self):
-        return self.params[Param.MAC]
+        return self.parametros[Param.MAC]
 
     def hay_redes(self):
-        return (self.params[Param.IP_ORIGEN] or
-                self.params[Param.IP_DESTINO])
+        return (self.parametros[Param.IP_ORIGEN] or
+                self.parametros[Param.IP_DESTINO])
 
     def producto_cartesiano(self, lista1, lista2):
         '''
@@ -351,19 +353,19 @@ class Objetivo(models.Model):
     tipo = models.CharField(max_length=1, default='d')
     direccion_fisica = models.CharField(null=True)
 
-    def obtener_parametros(self, parametros):
+    def obtener_parametros(self, politica):
         '''
         Completa el diccionario de parametros con los valores necesarios para
         que el iptables capture los hosts definidos en el objetivo.
         '''
         if self.direccion_fisica is not None:
-            parametros[Param.MAC].add(self.direccion_fisica)
+            politica.parametros[Param.MAC].add(self.direccion_fisica)
         if self.clase is not None:
-            self.parametros_subredes(parametros)
-            self.parametros_puertos(parametros)
-        return parametros
+            self.parametros_subredes(politica)
+            self.parametros_puertos(politica)
+        return politica.parametros
 
-    def parametros_subredes(self, parametros):
+    def parametros_subredes(self, politica):
         '''
         Obtiene los valores de parametros para que coincida las subredes de la
         clase.
@@ -372,9 +374,9 @@ class Objetivo(models.Model):
             param = (Param.IP_ORIGEN if self.tipo == Objetivo.ORIGEN else
                      Param.IP_DESTINO)
             for item in self.clase.redes:
-                parametros[param].add(str(item.cidr))
+                politica.parametros[param].add(str(item.cidr))
 
-    def parametros_puertos(self, parametros):
+    def parametros_puertos(self, politica):
         '''
         Obtiene los flags para que coincida los puertos de la clase.
         '''
@@ -383,7 +385,7 @@ class Objetivo(models.Model):
                 for proto in (Protocolo.TCP, Protocolo.UDP):
                     param = self.definir_parametro_puerto(proto, item.puerto)
                     if param:
-                        parametros[param].add(item.puerto.numero)
+                        politica.parametros[param].add(item.puerto.numero)
 
     def definir_parametro_puerto(self, protocolo, puerto):
         '''
