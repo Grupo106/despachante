@@ -8,10 +8,10 @@ setup(
     keywords='netcop despachante',
     packages=['netcop.despachante', 'netcop.despachante.templates'],
     url='https://github.com/grupo106/despachante',
-    namespace_packages = ['netcop'],
-   description='Despachante de politicas de usuario',
+    namespace_packages=['netcop'],
+    description='Despachante de politicas de usuario',
     long_description=open('README.md').read(),
-    package_data = {
+    package_data={
         # Incluir templates de Jinja2
         '': ['*.j2'],
     },
