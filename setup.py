@@ -6,7 +6,7 @@ setup(
     author='Yonatan Romero',
     author_email='yromero@openmailbox.org',
     keywords='netcop despachante',
-    packages=['netcop.despachante', 'netcop.despachante.templates'],
+    packages=['netcop', 'netcop.despachante', 'netcop.despachante.templates'],
     url='https://github.com/grupo106/despachante',
     namespace_packages=['netcop'],
     description='Despachante de politicas de usuario',
