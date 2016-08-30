@@ -315,9 +315,9 @@ class Politica(models.Model):
             nuevo = self.__item_bajada(item)
             # intercambio de pares
             for origen, destino in pares:
-                if item.has_key(origen):
+                if origen in item:
                     modificado = nuevo[destino] = item[origen]
-                if item.has_key(destino):
+                if destino in item:
                     modificado = nuevo[origen] = item[destino]
             # agrego nuevo item a la lista de flags
             if modificado:
@@ -373,13 +373,15 @@ class Politica(models.Model):
                 lista.append(dict(flags1, **flags2))
             return lista
 
-    def activa(self, fecha=None):
+    def esta_activa(self, fecha=None):
         '''
         Devuelve verdadero si la politica esta activa en la fecha pasada por
         parametro.
 
         Si no se pasa ninguna fecha por parametro, utiliza la fecha actual.
         '''
+        if not self.activa:
+            return False
         # si no tiene restriccion de horarios, esta activa
         if self.horarios.count() == 0:
             return True

@@ -61,8 +61,11 @@ class Despachante:
         En caso que no se pase fecha por parametro, obtiene las politicas
         activas en el momento actual.
         '''
-        politicas = models.Politica.select()
-        return [politica for politica in politicas if politica.activa(fecha)]
+        politicas = models.Politica.select().where(
+            models.Politica.activa == True
+        )
+        return [politica for politica in politicas
+                if politica.esta_activa(fecha)]
 
     def despacho_necesario(self):
         '''
