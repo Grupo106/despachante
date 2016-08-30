@@ -20,6 +20,7 @@ TC="/usr/bin/sudo /sbin/tc"
 {# Limpia reglas previas #}
 $IPTABLES -P FORWARD ACCEPT
 $IPTABLES -F
+$IPTABLES -F -t mangle
 $IPTABLES -A FORWARD -i lo -j ACCEPT
 $TC qdisc del dev {{ if_outside }} root
 $TC qdisc del dev {{ if_inside }} root

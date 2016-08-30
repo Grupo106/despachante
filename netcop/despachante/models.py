@@ -336,7 +336,7 @@ class Politica(models.Model):
         indeseables = (Flag.IP_ORIGEN, Flag.IP_DESTINO, Flag.PUERTO_ORIGEN,
                        Flag.PUERTO_DESTINO)
         nuevo = item.copy()
-        nuevo[Flag.INTERFAZ_SALIDA] = config.NETCOP['inside']
+        nuevo[Flag.INTERFAZ_ENTRADA] = config.NETCOP['outside']
         for key in indeseables:
             nuevo.pop(key, None)
         return nuevo
