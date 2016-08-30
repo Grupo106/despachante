@@ -34,12 +34,8 @@ class Flag:
     MAC_ORIGEN = '--mac-source'
     EXTENSION_MAC = '-m mac'
     PROTOCOLO = '-p'
-    INTERFAZ_ENTRADA = '-i'
-    INTERFAZ_SALIDA = '-o'
     PRIORIDAD = (EXTENSION_MAC,
                  PROTOCOLO,
-                 INTERFAZ_SALIDA,
-                 INTERFAZ_ENTRADA,
                  MAC_ORIGEN,
                  IP_ORIGEN,
                  IP_DESTINO,
@@ -336,7 +332,6 @@ class Politica(models.Model):
         indeseables = (Flag.IP_ORIGEN, Flag.IP_DESTINO, Flag.PUERTO_ORIGEN,
                        Flag.PUERTO_DESTINO)
         nuevo = item.copy()
-        nuevo[Flag.INTERFAZ_ENTRADA] = config.NETCOP['outside']
         for key in indeseables:
             nuevo.pop(key, None)
         return nuevo

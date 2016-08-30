@@ -523,7 +523,6 @@ class DespachanteTests(unittest.TestCase):
         flags = politica.flags_bajada(politica.flags_puerto([]))
         assert flags[0].get(Flag.PUERTO_ORIGEN) == 80
         assert flags[1].get(Flag.PUERTO_DESTINO) == 80
-        assert flags[1].get(Flag.INTERFAZ_ENTRADA) == config.NETCOP['outside']
 
     def test_flags_puerto_origen_tcp_subida(self):
         '''
@@ -549,7 +548,6 @@ class DespachanteTests(unittest.TestCase):
         flags = politica.flags_bajada(politica.flags_puerto([]))
         assert flags[0].get(Flag.PUERTO_DESTINO) == 80
         assert flags[1].get(Flag.PUERTO_ORIGEN) == 80
-        assert flags[1].get(Flag.INTERFAZ_ENTRADA) == config.NETCOP['outside']
 
     def test_flags_puerto_destino_tcp_subida(self):
         '''
