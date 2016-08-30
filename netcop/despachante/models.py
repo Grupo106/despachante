@@ -231,6 +231,10 @@ class Politica(models.Model):
         return lista
 
     def flags_mac(self, lista):
+        '''
+        Devuelve los flags para que capture las mac-address definidas en los
+        objetivos de la politica.
+        '''
         if not self.hay_macs():
             return lista
         flags = [{Flag.MAC_ORIGEN: mac, Flag.EXTENSION_MAC: ''}
@@ -238,6 +242,10 @@ class Politica(models.Model):
         return self.producto_cartesiano(lista, flags)
 
     def flags_puerto(self, lista):
+        '''
+        Devuelve los flags para que capture los puertos definidos en los
+        objetivos de la politica.
+        '''
         if not self.hay_puertos():
             return lista
         PUERTOS = (
@@ -270,26 +278,52 @@ class Politica(models.Model):
         return self.producto_cartesiano(lista, ret)
 
     def flags_redes(self, lista):
+        '''
+        Devuelve los flags para que capture las redes definidas en los
+        objetivos de la politica.
+        '''
         if not self.hay_redes():
             return lista
         flags = dict()
         if self.parametros[Param.IP_ORIGEN]:
-            flags[Flag.IP_ORIGEN] = ",".join(self.parametros[Param.IP_ORIGEN])
+            flags[Flag.IP_ORIGEN] = ",".join(
+                self.parametros[Param.IP_ORIGEN]
+            )
         if self.parametros[Param.IP_DESTINO]:
             flags[Flag.IP_DESTINO] = ",".join(
-                self.parametros[Param.IP_DESTINO])
+                self.parametros[Param.IP_DESTINO]
+            )
         return self.producto_cartesiano(lista, [flags])
 
+    def flags_bajada(self, lista):
+        '''
+        Como las reglas del trafico de bajada se aplican en la interfaz inside,
+        se tienen que aplicar las reglas al reves, es decir los objetivos
+        origen se transforman en destino y los destino se transforman en
+        origen.
+        '''
+        pass
+
     def hay_puertos(self):
+        '''
+        Devuelve verdadero cuando se definan puertos TCP o UDP en la politica
+        tanto como origen o como destino.
+        '''
         return (self.parametros[Param.TCP_ORIGEN] or
                 self.parametros[Param.TCP_DESTINO] or
                 self.parametros[Param.UDP_ORIGEN] or
                 self.parametros[Param.UDP_DESTINO])
 
     def hay_macs(self):
+        '''
+        Devuelve verdadero si se definen mac address en la politica.
+        '''
         return self.parametros[Param.MAC]
 
     def hay_redes(self):
+        '''
+        Devuelve verdadero si se definen redes en la politica.
+        '''
         return (self.parametros[Param.IP_ORIGEN] or
                 self.parametros[Param.IP_DESTINO])
 
@@ -325,9 +359,15 @@ class Politica(models.Model):
         return False
 
     def __eq__(self, item):
+        '''
+        Devuelve verdadero si dos politicas son iguales.
+        '''
         return self.id_politica == item.id_politica
 
     def __hash__(self):
+        '''
+        Devuelve verdadero si dos politicas son iguales.
+        '''
         return hash(self.id_politica)
 
     def __str__(self):
