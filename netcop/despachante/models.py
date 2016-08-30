@@ -34,8 +34,12 @@ class Flag:
     MAC_ORIGEN = '--mac-source'
     EXTENSION_MAC = '-m mac'
     PROTOCOLO = '-p'
+    INTERFAZ_ENTRADA = '-i'
+    INTERFAZ_SALIDA = '-o'
     PRIORIDAD = (EXTENSION_MAC,
                  PROTOCOLO,
+                 INTERFAZ_SALIDA,
+                 INTERFAZ_ENTRADA,
                  MAC_ORIGEN,
                  IP_ORIGEN,
                  IP_DESTINO,
@@ -208,9 +212,11 @@ class Politica(models.Model):
         for objetivo in self.objetivos:
             objetivo.obtener_parametros(self)
 
-        return self.flags_mac(
-            self.flags_puerto(
-                self.flags_redes([])
+        return self.flags_bajada(
+            self.flags_mac(
+                self.flags_puerto(
+                    self.flags_redes([])
+                )
             )
         )
 
@@ -302,7 +308,38 @@ class Politica(models.Model):
         origen se transforman en destino y los destino se transforman en
         origen.
         '''
-        pass
+        if not self.velocidad_bajada:
+            return lista
+        pares = ((Flag.IP_ORIGEN, Flag.IP_DESTINO),
+                 (Flag.PUERTO_ORIGEN, Flag.PUERTO_DESTINO),)
+        ret = list(lista)
+        for item in lista:
+            # hago una copia de los flags eliminando los valores de los pares
+            modificado = False
+            nuevo = self.__item_bajada(item)
+            # intercambio de pares
+            for origen, destino in pares:
+                if item.has_key(origen):
+                    modificado = nuevo[destino] = item[origen]
+                if item.has_key(destino):
+                    modificado = nuevo[origen] = item[destino]
+            # agrego nuevo item a la lista de flags
+            if modificado:
+                ret.append(nuevo)
+        return ret
+
+    def __item_bajada(self, item):
+        '''
+        Copia un diccionario de flags, eliminando keys no deseadas para aplicar
+        los flags de bajada.
+        '''
+        indeseables = (Flag.IP_ORIGEN, Flag.IP_DESTINO, Flag.PUERTO_ORIGEN,
+                       Flag.PUERTO_DESTINO)
+        nuevo = item.copy()
+        nuevo[Flag.INTERFAZ_SALIDA] = config.NETCOP['inside']
+        for key in indeseables:
+            nuevo.pop(key, None)
+        return nuevo
 
     def hay_puertos(self):
         '''
@@ -436,27 +473,15 @@ class Objetivo(models.Model):
         if protocolo == Protocolo.TCP:
             if puerto.protocolo in (0, Protocolo.TCP):
                 if self.tipo == Objetivo.ORIGEN:
-                    if politica.velocidad_bajada:
-                        return Param.TCP_DESTINO
-                    else:
-                        return Param.TCP_ORIGEN
+                    return Param.TCP_ORIGEN
                 else:
-                    if politica.velocidad_bajada:
-                        return Param.TCP_ORIGEN
-                    else:
-                        return Param.TCP_DESTINO
+                    return Param.TCP_DESTINO
         elif protocolo == Protocolo.UDP:
             if puerto.protocolo in (0, Protocolo.UDP):
                 if self.tipo == Objetivo.ORIGEN:
-                    if politica.velocidad_bajada:
-                        return Param.UDP_DESTINO
-                    else:
-                        return Param.UDP_ORIGEN
+                    return Param.UDP_ORIGEN
                 else:
-                    if politica.velocidad_bajada:
-                        return Param.UDP_ORIGEN
-                    else:
-                        return Param.UDP_DESTINO
+                    return Param.UDP_DESTINO
 
     class Meta:
         database = db

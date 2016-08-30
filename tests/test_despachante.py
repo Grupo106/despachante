@@ -8,7 +8,7 @@ import jinja2
 from datetime import datetime, timedelta
 from mock import Mock
 
-from netcop.despachante import models, Despachante
+from netcop.despachante import models, Despachante, config
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -512,50 +512,71 @@ class DespachanteTests(unittest.TestCase):
         assert '512kbit' in script
         assert 'REJECT' in script
 
-    def test_parametro_puerto_origen_tcp_bajada(self):
+    def test_flags_puerto_origen_tcp_bajada(self):
         '''
         Prueba obtener el parametro del puerto a utilizar.
 
         Puerto origen TCP con velocidad maxima de bajada
         '''
-        objetivo = models.Objetivo(tipo=models.Objetivo.ORIGEN)
         politica = models.Politica(velocidad_bajada=1024)
-        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
-        parametro = objetivo.definir_parametro_puerto(
-            protocolo=models.Protocolo.TCP,
-            puerto=puerto,
-            politica=politica)
-        assert parametro == models.Param.TCP_DESTINO
+        politica.parametros[Param.TCP_ORIGEN] = set([80])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert flags[0].get(Flag.PUERTO_ORIGEN) == 80
+        assert flags[1].get(Flag.PUERTO_DESTINO) == 80
+        assert flags[1].get(Flag.INTERFAZ_SALIDA) == config.NETCOP['inside']
 
-    def test_parametro_puerto_origen_tcp_subida(self):
+    def test_flags_puerto_origen_tcp_subida(self):
         '''
         Prueba obtener el parametro del puerto a utilizar.
 
         Puerto origen TCP con velocidad maxima de subida
         '''
-        objetivo = models.Objetivo(tipo=models.Objetivo.ORIGEN)
         politica = models.Politica(velocidad_subida=1024)
-        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
-        parametro = objetivo.definir_parametro_puerto(
-            protocolo=models.Protocolo.TCP,
-            puerto=puerto,
-            politica=politica)
-        assert parametro == models.Param.TCP_ORIGEN
+        politica.parametros[Param.TCP_ORIGEN] = set([443])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert len(flags) == 1
+        assert flags[0].get(Flag.PUERTO_ORIGEN) == 443
+        assert not flags[0].get(Flag.PUERTO_DESTINO)
 
-    def test_parametro_puerto_destino_tcp_bajada(self):
+    def test_flags_puerto_destino_tcp_bajada(self):
         '''
         Prueba obtener el parametro del puerto a utilizar.
 
         Puerto destino TCP con velocidad maxima de bajada
         '''
-        objetivo = models.Objetivo(tipo=models.Objetivo.DESTINO)
         politica = models.Politica(velocidad_bajada=1024)
-        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
-        parametro = objetivo.definir_parametro_puerto(
-            protocolo=models.Protocolo.TCP,
-            puerto=puerto,
-            politica=politica)
-        assert parametro == models.Param.TCP_ORIGEN
+        politica.parametros[Param.TCP_DESTINO] = set([80])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert flags[0].get(Flag.PUERTO_DESTINO) == 80
+        assert flags[1].get(Flag.PUERTO_ORIGEN) == 80
+        assert flags[1].get(Flag.INTERFAZ_SALIDA) == config.NETCOP['inside']
+
+    def test_flags_puerto_destino_tcp_subida(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto destino TCP con velocidad maxima de subida
+        '''
+        politica = models.Politica(velocidad_subida=1024)
+        politica.parametros[Param.TCP_ORIGEN] = set([443])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert len(flags) == 1
+        assert flags[0].get(Flag.PUERTO_ORIGEN) == 443
+        assert not flags[0].get(Flag.PUERTO_DESTINO)
+
+    def test_flags_puerto_destino_subida_bajada(self):
+        '''
+        Prueba obtener el parametro del puerto a utilizar.
+
+        Puerto destino TCP con velocidad maxima de bajada
+        '''
+        politica = models.Politica(velocidad_bajada=1024,
+                                   velocidad_subida=512)
+        politica.parametros[Param.TCP_DESTINO] = set([80])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert len(flags) == 2
+        assert flags[0].get(Flag.PUERTO_DESTINO) == 80
+        assert flags[1].get(Flag.PUERTO_ORIGEN) == 80
 
     def test_parametro_puerto_destino_tcp_subida(self):
         '''
@@ -563,14 +584,12 @@ class DespachanteTests(unittest.TestCase):
 
         Puerto destino TCP con velocidad maxima de subida
         '''
-        objetivo = models.Objetivo(tipo=models.Objetivo.DESTINO)
         politica = models.Politica(velocidad_subida=1024)
-        puerto = models.Puerto(protocolo=models.Protocolo.TCP, numero=443)
-        parametro = objetivo.definir_parametro_puerto(
-            protocolo=models.Protocolo.TCP,
-            puerto=puerto,
-            politica=politica)
-        assert parametro == models.Param.TCP_DESTINO
+        politica.parametros[Param.TCP_ORIGEN] = set([443])
+        flags = politica.flags_bajada(politica.flags_puerto([]))
+        assert len(flags) == 1
+        assert flags[0].get(Flag.PUERTO_ORIGEN) == 443
+        assert not flags[0].get(Flag.PUERTO_DESTINO)
 
     def test_parametro_puerto_destino_tcp(self):
         '''
@@ -625,6 +644,8 @@ class DespachanteTests(unittest.TestCase):
         assert 'MARK' in script
         assert models.Flag.PUERTO_ORIGEN + ' 80' in script
         assert models.Flag.PUERTO_ORIGEN + ' 443' in script
+        assert models.Flag.PUERTO_DESTINO + ' 80' in script
+        assert models.Flag.PUERTO_DESTINO + ' 443' in script
 
     @mock.patch('os.path.getmtime')
     def test_sin_ultimo_despacho(self, mock):
