@@ -36,8 +36,8 @@ $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate 
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
     # DEBUG: priorizacion {{ politica.id_politica }}
-    $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|default('1gbit') }} prio {{ politica.prioridad }}
-    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|default('1gbit') }} prio {{ politica.prioridad }}
+    $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|default('1024') }}mbit prio {{ politica.prioridad }}
+    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|default('1024') }}mbit prio {{ politica.prioridad }}
     $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% for flags in politica.flags() %}
