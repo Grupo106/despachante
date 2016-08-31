@@ -12,6 +12,7 @@
  Netcop 2016. Universidad Nacional de la Matanza
 #}
 {% set root_queue=9999 %}
+{% set default_queue=9998 %}
 #!/bin/sh
 
 IPTABLES="/usr/bin/sudo /sbin/iptables"
@@ -26,10 +27,12 @@ $TC qdisc del dev {{ if_outside }} root
 $TC qdisc del dev {{ if_inside }} root
 
 {# inicializacion del tc #}
-$TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ root_queue }}
+$TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1024') }}mbit
-$TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ root_queue }}
+$TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate {{ bw_bajada|default('1024') }}mbit prio 10
+$TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1024') }}mbit
+$TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate {{ bw_bajada|default('1024') }}mbit prio 10
 
 {% for politica in politicas %}
   {# Priorizacion #}
