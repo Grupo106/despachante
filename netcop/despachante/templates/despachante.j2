@@ -27,9 +27,9 @@ $TC qdisc del dev {{ if_inside }} root
 
 {# inicializacion del tc #}
 $TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ root_queue }}
-$TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1gbit') }}
+$TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida|default('1024') }}mbit
 $TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ root_queue }}
-$TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1gbit') }}
+$TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada|default('1024') }}mbit
 
 {% for politica in politicas %}
   {# Priorizacion #}
