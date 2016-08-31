@@ -304,7 +304,7 @@ class Politica(models.Model):
         origen se transforman en destino y los destino se transforman en
         origen.
         '''
-        if not self.velocidad_bajada:
+        if not self.velocidad_bajada and not self.prioridad:
             return lista
         pares = ((Flag.IP_ORIGEN, Flag.IP_DESTINO),
                  (Flag.PUERTO_ORIGEN, Flag.PUERTO_DESTINO),)
