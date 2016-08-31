@@ -63,15 +63,20 @@ $TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada }}mbit
 $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio 3
 
+{# Definicion de reglas #}
+{# ----------------------------------------------------------------------- #}
 {% for politica in politicas %}
+
   {# Priorizacion #}
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
     # DEBUG: priorizacion {{ politica.id_politica }}
     $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida/cantidad_prioridad }}mbit ceil {{ bw_subida }}mbit prio {{ politica.prioridad }}
-    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada/cantidad_prioridad }}mbit ceil {{ bw_bajada }}mbit prio {{ politica.prioridad }}
     $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+
+    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada/cantidad_prioridad }}mbit ceil {{ bw_bajada }}mbit prio {{ politica.prioridad }}
     $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
+
     {% for flags in politica.flags() %}
       $IPTABLES -A FORWARD -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
       $IPTABLES -A FORWARD -t mangle {{ flags }} -j RETURN
@@ -85,10 +90,12 @@ $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default
       $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_subida }}kbit prio 4
       $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
+
     {% if politica.velocidad_bajada %}
       $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_bajada }}kbit prio 4
       $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
+
     {% for flags in politica.flags() %}
       $IPTABLES -A FORWARD -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
       $IPTABLES -A FORWARD -t mangle {{ flags }} -j RETURN
@@ -104,6 +111,8 @@ $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default
   {% endif %}
 {% endfor %}
 
+{# Por defecto acepta todo el trafico #}
+{# ----------------------------------------------------------------------- #}
 $IPTABLES -P INPUT ACCEPT
 $IPTABLES -P FORWARD ACCEPT
 $IPTABLES -P OUTPUT ACCEPT
