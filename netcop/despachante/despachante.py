@@ -75,12 +75,9 @@ class Despachante:
         o cuando existan reglas temporales y haya que activar o desactivar
         politicas debido al paso del tiempo.
         '''
-        return (
-            self.fecha_ultimo_despacho is None or (
-                    self.hay_reglas_temporales() and
-                    self.hay_cambio_de_politicas()
-            )
-         )
+        return (self.fecha_ultimo_despacho is None or 
+                self.hay_reglas_temporales() and
+                self.hay_cambio_de_politicas())
 
     def despachar(self):
         '''
@@ -91,7 +88,9 @@ class Despachante:
         template = env.get_template('despachante.j2')
         script = template.render(politicas=self.obtener_politicas(),
                                  if_outside=config.NETCOP['outside'],
-                                 if_inside=config.NETCOP['inside'])
+                                 if_inside=config.NETCOP['inside'],
+                                 bw_bajada=config.NETCOP['velocidad_bajada'],
+                                 bw_subida=config.NETCOP['velocidad_subida'])
         # escribo script en el archivo
         with open(self.SCRIPT_FILE, 'w') as f:
             for line in script.split('\n'):

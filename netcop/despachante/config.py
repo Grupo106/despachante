@@ -39,6 +39,8 @@ class Default:
         'url_download': 'http://netcop.ftp.sh/descarga',
         'outside': 'eth0',
         'inside': 'eth1',
+        'velocidad_bajada': '100',
+        'velocidad_subida': '100',
     }
 
 config = configparser.ConfigParser()
