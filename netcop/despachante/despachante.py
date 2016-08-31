@@ -86,11 +86,17 @@ class Despachante:
         '''
         env = Environment(loader=PackageLoader('netcop.despachante'))
         template = env.get_template('despachante.j2')
-        script = template.render(politicas=self.obtener_politicas(),
-                                 if_outside=config.NETCOP['outside'],
-                                 if_inside=config.NETCOP['inside'],
-                                 bw_bajada=config.NETCOP['velocidad_bajada'],
-                                 bw_subida=config.NETCOP['velocidad_subida'])
+        politicas = self.obtener_politicas()
+        contexto = {
+            'politicas': politicas,
+            'if_outside': config.NETCOP['outside'],
+            'if_inside': config.NETCOP['inside'],
+            'bw_bajada': config.NETCOP['velocidad_bajada'],
+            'bw_subida': config.NETCOP['velocidad_subida'],
+            'cantidad_prioridad': len([x for x in politicas if x.prioridad])
+        }
+        print contexto
+        script = template.render(**contexto)
         # escribo script en el archivo
         with open(self.SCRIPT_FILE, 'w') as f:
             for line in script.split('\n'):
