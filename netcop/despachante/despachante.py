@@ -95,7 +95,6 @@ class Despachante:
             'bw_subida': config.NETCOP['velocidad_subida'],
             'cantidad_prioridad': len([x for x in politicas if x.prioridad])
         }
-        print contexto
         script = template.render(**contexto)
         # escribo script en el archivo
         with open(self.SCRIPT_FILE, 'w') as f:
