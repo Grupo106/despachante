@@ -24,18 +24,18 @@
 {# ------------------------------------------------------------------------- #}
 {% set root_queue=9999 %}
 {% set default_queue=9998 %}
-{# velociadad de subida #}
+{# velociadad de subida en mbits #}
 {% if bw_subida is not defined %}
   {% set bw_subida = 100 %}
 {% endif %}
-{# velociadad de bajada #}
+{# velociadad de bajada en mbits #}
 {% if bw_bajada is not defined %}
   {% set bw_bajada = 100 %}
 {% endif %}
-{# cantidad de reglas de priorizacion #}
-{% if cantidad_prioridad is not defined or cantidad_prioridad == 1 %}
-  {% set cantidad_prioridad = 2 %}
-{% endif %}
+{# valores de prioridad #}
+{% set PRIO_ALTA = 1 %}
+{% set PRIO_NORMAL = 3 %}
+{% set PRIO_BAJA = 7 %}
 
 {# Inicio del script #}
 {# ------------------------------------------------------------------------- #}
@@ -56,12 +56,12 @@ $TC qdisc del dev {{ if_inside }} root
 # DEBUG: Configuracion interfaz OUTSIDE
 $TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida }}mbit
-$TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio 3
+$TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
 
 # DEBUG: Configuracion interfaz INSIDE
 $TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada }}mbit
-$TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio 3
+$TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
 
 {# Definicion de reglas #}
 {# ----------------------------------------------------------------------- #}
@@ -70,11 +70,19 @@ $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default
   {# Priorizacion #}
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
+    {# defino la velocidad minima de la politica (en mbit) #}
+    {% if politica.prioridad == politica.PRIO_ALTA %}
+      {% set vm_bajada = bw_bajada|int/cant_alta_prioridad|default(1) %}
+      {% set vm_subida = bw_subida|int/cant_alta_prioridad|default(1) %}
+    {% else %}
+      {% set vm_bajada = 1/1024 %} {# 1kbit #}
+      {% set vm_subida = 1/1024 %} {# 1kbit #}
+    {% endif %}
     # DEBUG: priorizacion {{ politica.id_politica }}
-    $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_subida|int/cantidad_prioridad }}mbit ceil {{ bw_subida }}mbit prio {{ politica.prioridad }}
+    $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ vm_subida }}mbit ceil {{ bw_subida }}mbit prio {{ politica.prioridad }}
     $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
 
-    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ bw_bajada|int/cantidad_prioridad }}mbit ceil {{ bw_bajada }}mbit prio {{ politica.prioridad }}
+    $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate {{ vm_subida }}mbit ceil {{ bw_bajada }}mbit prio {{ politica.prioridad }}
     $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
 
     {% for flags in politica.flags() %}
@@ -87,12 +95,12 @@ $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default
   {% elif politica.velocidad_bajada or politica.velocidad_subida %}
     # DEBUG: limitacion {{ politica.id_politica }}
     {% if politica.velocidad_subida %}
-      $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_subida }}kbit prio 4
+      $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_subida }}kbit prio {{ PRIO_NORMAL }}
       $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
 
     {% if politica.velocidad_bajada %}
-      $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_bajada }}kbit prio 4
+      $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ loop.index }} htb rate 1kbit ceil {{ politica.velocidad_bajada }}kbit prio {{ PRIO_NORMAL }}
       $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ loop.index }}
     {% endif %}
 

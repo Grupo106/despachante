@@ -8,7 +8,6 @@ import subprocess
 from . import models, config
 from jinja2 import Environment, PackageLoader
 
-
 class Despachante:
     '''
     Traduce politicas de usuario en un script bash que sera interpretado por el
@@ -93,7 +92,8 @@ class Despachante:
             'if_inside': config.NETCOP['inside'],
             'bw_bajada': config.NETCOP['velocidad_bajada'],
             'bw_subida': config.NETCOP['velocidad_subida'],
-            'cantidad_prioridad': len([x for x in politicas if x.prioridad])
+            'cant_alta_prioridad': len(
+                [x for x in politicas if x.prioridad == x.PRIO_ALTA]),
         }
         script = template.render(**contexto)
         # escribo script en el archivo

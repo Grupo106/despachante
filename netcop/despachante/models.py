@@ -181,6 +181,9 @@ class Politica(models.Model):
     '''
     Define una regla sobre el trafico creada por el usuario.
     '''
+    PRIO_ALTA = 1
+    PRIO_NORMAL = 3
+    PRIO_BAJA = 7
     id_politica = models.PrimaryKeyField()
     nombre = models.CharField(max_length=63)
     descripcion = models.CharField(max_length=255, null=True)
