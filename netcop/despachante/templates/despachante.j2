@@ -57,11 +57,13 @@ $TC qdisc del dev {{ if_inside }} root
 $TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida }}mbit
 $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
+$TC qdisc add dev {{ if_outside }} parent 1:{{ default_queue }} handle 9998: sfq perturb 10
 
 # DEBUG: Configuracion interfaz INSIDE
 $TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ default_queue }}
 $TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada }}mbit
 $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
+$TC qdisc add dev {{ if_inside }} parent 1:{{ default_queue }} handle 9998: sfq perturb 10
 
 {# Definicion de reglas #}
 {# ----------------------------------------------------------------------- #}
