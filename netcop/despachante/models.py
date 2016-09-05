@@ -509,7 +509,7 @@ class RangoHorario(models.Model):
         '''
         Devuelve verdadero si la fecha-hora (item) esta dentro del rango.
         '''
-        return (item.day == self.dia and
+        return (item.weekday() == self.dia and
                 self.hora_inicial <= item.time() < self.hora_fin)
 
     class Meta:
