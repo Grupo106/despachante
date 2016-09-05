@@ -704,28 +704,28 @@ class DespachanteTests(unittest.TestCase):
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
-                dia=now.day + 1,
+                dia=now.weekday() + 1,
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=(now + timedelta(hours=2)).time(),
             )
             # politica1: rango valido
             models.RangoHorario.create(
                 politica=politica1,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=(now + timedelta(hours=1)).time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now + timedelta(hours=1)).time(),
                 hora_fin=(now + timedelta(hours=2)).time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day + 1,
+                dia=now.weekday() + 1,
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=(now + timedelta(hours=2)).time(),
             )
@@ -752,28 +752,28 @@ class DespachanteTests(unittest.TestCase):
             # politica1: rango no valido
             models.RangoHorario.create(
                 politica=politica1,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
             # politica1: rango valido
             models.RangoHorario.create(
                 politica=politica1,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=2)).time(),
                 hora_fin=now.time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
             # politica2: rango no valido
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day + 1,
+                dia=now.weekday() + 1,
                 hora_inicial=(now - timedelta(hours=2)).time(),
                 hora_fin=now.time(),
             )
@@ -796,7 +796,7 @@ class DespachanteTests(unittest.TestCase):
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
@@ -823,7 +823,7 @@ class DespachanteTests(unittest.TestCase):
             politica2 = models.Politica.create(nombre='politica2')
             models.RangoHorario.create(
                 politica=politica2,
-                dia=now.day,
+                dia=now.weekday(),
                 hora_inicial=(now - timedelta(hours=1)).time(),
                 hora_fin=now.time(),
             )
