@@ -17,16 +17,16 @@ args = parser.parse_args()
 try:
     syslog.openlog('despachante')
     models.db.connect()
-    if not args.temporizado or d.despacho_necesario():
+    despachante = Despachante() 
+    if not args.temporizado or despachante.despacho_necesario():
         syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
-        despachante = Despachante() 
         despachante.despachar()
     else:
         print("No hay necesidad de despacho.")
-except Exception as inst:
-    syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % inst)
+except Exception as e:
+    syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % str(e))
+    print >> sys.stderr, str(e)
     raise
-    sys.exit(1)
 finally:
     syslog.closelog()
     if not models.db.is_closed():

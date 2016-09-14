@@ -6,6 +6,7 @@ el sistema operativo pueda reconocer.
 import os
 import subprocess
 from . import models, config
+from datetime import datetime
 from jinja2 import Environment, PackageLoader
 
 class Despachante:
@@ -22,11 +23,11 @@ class Despachante:
     @property
     def fecha_ultimo_despacho(self):
         '''
-        Obtiene la fecha y hora del ultimo despacho efectuado en formato
-        Unix-Time. Devuelve None si no se encontro despacho anterior.
+        Obtiene la fecha y hora del ultimo despacho.
+        Devuelve None si no se encontro despacho anterior.
         '''
         try:
-            return os.path.getmtime(self.SCRIPT_FILE)
+            return datetime.utcfromtimestamp(os.path.getmtime(self.SCRIPT_FILE))
         except OSError:
             return None
 
@@ -74,7 +75,7 @@ class Despachante:
         o cuando existan reglas temporales y haya que activar o desactivar
         politicas debido al paso del tiempo.
         '''
-        return (self.fecha_ultimo_despacho is None or 
+        return (self.fecha_ultimo_despacho is None or
                 self.hay_reglas_temporales() and
                 self.hay_cambio_de_politicas())
 
