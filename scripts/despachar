@@ -5,6 +5,8 @@ import syslog
 import argparse
 from netcop.despachante import Despachante, models
  
+# Manejo de argumentos
+# ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--temporizado",
                     help="Ejecuta el script en modo temporizado. Si no es "
@@ -15,20 +17,17 @@ args = parser.parse_args()
 try:
     syslog.openlog('despachante')
     models.db.connect()
-    d = Despachante() 
-    if not args.temporizado:
+    if not args.temporizado or d.despacho_necesario():
         syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
-        d.despachar()
-    elif d.despacho_necesario():
-        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
-        d.despachar()
+        despachante = Despachante() 
+        despachante.despachar()
     else:
         print("No hay necesidad de despacho.")
 except Exception as inst:
     syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % inst)
+    raise
     sys.exit(1)
 finally:
     syslog.closelog()
     if not models.db.is_closed():
         models.db.close()
-    
