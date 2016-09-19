@@ -44,7 +44,7 @@ class Default:
     }
 
 config = configparser.ConfigParser()
-config.read(NETCOP_CONFIG)
+config.read(NETCOP_CONFIG, encoding='utf8')
 
 # guarda el resto de las configuraciones del modulo
 for section in config.sections():
