@@ -1,0 +1,29 @@
+{#
+ Template para inicializar el control de trafico y el firewall del kernel
+ Linux
+
+ @author: Yonatan Romero
+ Netcop 2016. Universidad Nacional de la Matanza
+#}
+
+{# Limpia reglas previas #}
+# DEBUG: Limpia reglas previas
+$IPTABLES -P FORWARD ACCEPT
+$IPTABLES -F
+$IPTABLES -F -t mangle
+$IPTABLES -A FORWARD -i lo -j ACCEPT
+$TC qdisc del dev {{ if_outside }} root
+$TC qdisc del dev {{ if_inside }} root
+
+{# inicializacion del tc #}
+# DEBUG: Configuracion interfaz OUTSIDE
+$TC qdisc add dev {{ if_outside }} root handle 1: htb default {{ default_queue }}
+$TC class add dev {{ if_outside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_subida }}mbit
+$TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
+$TC qdisc add dev {{ if_outside }} parent 1:{{ default_queue }} handle 9998: sfq perturb 10
+
+# DEBUG: Configuracion interfaz INSIDE
+$TC qdisc add dev {{ if_inside }} root handle 1: htb default {{ default_queue }}
+$TC class add dev {{ if_inside }} parent 1: classid 1:{{ root_queue }} htb rate {{ bw_bajada }}mbit
+$TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ default_queue }} htb rate 1kbit ceil {{ bw_bajada|default('1024') }}mbit prio {{ PRIO_NORMAL }}
+$TC qdisc add dev {{ if_inside }} parent 1:{{ default_queue }} handle 9998: sfq perturb 10

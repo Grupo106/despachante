@@ -1,0 +1,11 @@
+{#
+ Template para la denegacion de trafico de red.
+
+ @author: Yonatan Romero
+ Netcop 2016. Universidad Nacional de la Matanza
+#}
+
+# DEBUG: restriccion {{ politica.id_politica }}
+{% for flags in politica.flags() %}
+  $IPTABLES -A FORWARD {{ flags }} -j REJECT
+{% endfor %}

@@ -1,0 +1,34 @@
+{#
+ Template para la priorizacion de trafico
+
+ Prioridades:
+ ---------------
+   * Alta: 1
+   * Normal: 3
+   * Baja: 7
+
+ Prioridad de trafico por defecto 3
+
+ @author: Yonatan Romero
+ Netcop 2016. Universidad Nacional de la Matanza
+#}
+
+{# defino la velocidad minima de la politica (en mbit) #}
+{% if politica.prioridad == politica.PRIO_ALTA %}
+  {% set vm_bajada = bw_bajada|int/cant_alta_prioridad|default(1) %}
+  {% set vm_subida = bw_subida|int/cant_alta_prioridad|default(1) %}
+{% else %}
+  {% set vm_bajada = 1/1024 %} {# 1kbit #}
+  {% set vm_subida = 1/1024 %} {# 1kbit #}
+{% endif %}
+# DEBUG: priorizacion {{ politica.id_politica }}
+$TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ numero_politica }} htb rate {{ vm_subida }}mbit ceil {{ bw_subida }}mbit prio {{ politica.prioridad }}
+$TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ numero_politica }}
+
+$TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ numero_politica }} htb rate {{ vm_subida }}mbit ceil {{ bw_bajada }}mbit prio {{ politica.prioridad }}
+$TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ numero_politica }}
+
+{% for flags in politica.flags() %}
+  $IPTABLES -A FORWARD -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+  $IPTABLES -A FORWARD -t mangle {{ flags }} -j RETURN
+{% endfor %}

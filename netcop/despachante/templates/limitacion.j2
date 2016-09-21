@@ -1,0 +1,22 @@
+{#
+ Template para la asignacion de velocidad maxima para el trafico
+
+ @author: Yonatan Romero
+ Netcop 2016. Universidad Nacional de la Matanza
+#}
+
+# DEBUG: limitacion {{ politica.id_politica }}
+{% if politica.velocidad_subida %}
+  $TC class add dev {{ if_outside }} parent 1:{{ root_queue }} classid 1:{{ numero_politica }} htb rate 1kbit ceil {{ politica.velocidad_subida }}kbit prio {{ PRIO_NORMAL }}
+  $TC filter add dev {{ if_outside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ numero_politica }}
+{% endif %}
+
+{% if politica.velocidad_bajada %}
+  $TC class add dev {{ if_inside }} parent 1:{{ root_queue }} classid 1:{{ numero_politica }} htb rate 1kbit ceil {{ politica.velocidad_bajada }}kbit prio {{ PRIO_NORMAL }}
+  $TC filter add dev {{ if_inside }} parent 1: prio 0 protocol ip handle {{ politica.id_politica }} fw flowid 1:{{ numero_politica }}
+{% endif %}
+
+{% for flags in politica.flags() %}
+  $IPTABLES -A FORWARD -t mangle {{ flags }} -j MARK --set-mark {{ politica.id_politica }}
+  $IPTABLES -A FORWARD -t mangle {{ flags }} -j RETURN
+{% endfor %}
