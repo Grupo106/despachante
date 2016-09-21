@@ -502,7 +502,7 @@ class DespachanteTests(unittest.TestCase):
                                     prioridad=1)
         politica4.objetivos = [objetivo_mac, objetivo_ip, objetivo_puerto]
         env = Environment(loader=PackageLoader('netcop.despachante'))
-        template = env.get_template("despachante.jinja")
+        template = env.get_template("main.jinja")
         script = template.render(politicas=[politica1, politica2, politica3,
                                             politica4],
                                  if_outside='eth0',
@@ -633,7 +633,7 @@ class DespachanteTests(unittest.TestCase):
                                      velocidad_subida='512')
         limitacion.objetivos = [objetivo_puerto]
         template = (Environment(loader=PackageLoader('netcop.despachante'))
-                    .get_template("despachante.jinja"))
+                    .get_template("main.jinja"))
         script = template.render(politicas=[limitacion],
                                  if_outside='eth0',
                                  if_inside='eth1')
