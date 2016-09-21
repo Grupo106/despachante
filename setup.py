@@ -13,7 +13,7 @@ setup(
     long_description=open('README.md').read(),
     package_data={
         # Incluir templates de Jinja2
-        '': ['*.j2'],
+        '': ['*.jinja'],
     },
     install_requires=[
         'peewee>=2.8.1',

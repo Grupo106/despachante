@@ -85,7 +85,7 @@ class Despachante:
         manda a ejecutar al sistema operativo.
         '''
         env = Environment(loader=PackageLoader('netcop.despachante'))
-        template = env.get_template('despachante.j2')
+        template = env.get_template('despachante.jinja')
         politicas = self.obtener_politicas()
         contexto = {
             'politicas': politicas,

@@ -47,7 +47,7 @@
 IPTABLES="/usr/bin/sudo /sbin/iptables"
 TC="/usr/bin/sudo /sbin/tc"
 
-{% include 'inicializacion.j2' %}
+{% include 'inicializacion.jinja' %}
 
 {# Definicion de reglas #}
 {# ------------------------------------------------------------------------- #}
@@ -57,17 +57,17 @@ TC="/usr/bin/sudo /sbin/tc"
   {# Priorizacion #}
   {# ----------------------------------------------------------------------- #}
   {% if politica.prioridad %}
-    {% include 'priorizacion.j2' %}
+    {% include 'priorizacion.jinja' %}
     
   {# Limitacion #}
   {# ----------------------------------------------------------------------- #}
   {% elif politica.velocidad_bajada or politica.velocidad_subida %}
-    {% include 'limitacion.j2' %}
+    {% include 'limitacion.jinja' %}
 
   {# Restriccion #}
   {# ----------------------------------------------------------------------- #}
   {% else %}
-    {% include 'restriccion.j2' %}
+    {% include 'restriccion.jinja' %}
   {% endif %}
 {% endfor %}
 
