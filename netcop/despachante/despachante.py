@@ -4,6 +4,7 @@ Encargado de transformar las politicas creadas por el usuario en comandos que
 el sistema operativo pueda reconocer.
 '''
 import os
+import syslog
 import subprocess
 from . import models, config
 from datetime import datetime
@@ -27,7 +28,9 @@ class Despachante:
         Devuelve None si no se encontro despacho anterior.
         '''
         try:
-            return datetime.utcfromtimestamp(os.path.getmtime(self.SCRIPT_FILE))
+            f = datetime.fromtimestamp(os.path.getmtime(self.SCRIPT_FILE))
+            syslog.syslog(syslog.LOG_DEBUG, "[*] Fecha ultimo despacho %s" % f)
+            return f
         except OSError:
             return None
 
@@ -36,7 +39,10 @@ class Despachante:
         Devuelve verdadero en caso que existan politicas en la base de datos
         que posean un rango horario de validez.
         '''
-        return models.RangoHorario.select().exists()
+        now = datetime.now()
+        return (models.RangoHorario
+                      .select(models.RangoHorario.dia == now.weekday())
+                      .exists())
 
     def hay_cambio_de_politicas(self):
         '''
@@ -50,6 +56,8 @@ class Despachante:
             return True
         anterior = set(self.obtener_politicas(ultimo_despacho))
         ahora = set(self.obtener_politicas())
+        syslog.syslog(syslog.LOG_DEBUG, "anterior-ahora %s" % (anterior-ahora))
+        syslog.syslog(syslog.LOG_DEBUG, "ahora-anterior %s" % (ahora-anterior))
         # si la diferencia es distinta de cero, hay cambios
         return len(anterior - ahora) + len(ahora - anterior) != 0
 
