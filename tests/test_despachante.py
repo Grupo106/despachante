@@ -664,7 +664,7 @@ class DespachanteTests(unittest.TestCase):
         despachante = Despachante()
         mock.return_value = 1471446575
         assert (despachante.fecha_ultimo_despacho.isoformat() ==
-                '2016-08-17T15:09:35')
+                '2016-08-17T12:09:35')
         assert mock.called
 
     @mock.patch('netcop.despachante.models.RangoHorario.select')
