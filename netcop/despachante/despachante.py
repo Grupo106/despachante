@@ -10,6 +10,7 @@ from . import models, config
 from datetime import datetime
 from jinja2 import Environment, PackageLoader
 
+
 class Despachante:
     '''
     Traduce politicas de usuario en un script bash que sera interpretado por el
@@ -56,8 +57,6 @@ class Despachante:
             return True
         anterior = set(self.obtener_politicas(ultimo_despacho))
         ahora = set(self.obtener_politicas())
-        syslog.syslog(syslog.LOG_DEBUG, "anterior-ahora %s" % (anterior-ahora))
-        syslog.syslog(syslog.LOG_DEBUG, "ahora-anterior %s" % (ahora-anterior))
         # si la diferencia es distinta de cero, hay cambios
         return len(anterior - ahora) + len(ahora - anterior) != 0
 
@@ -69,11 +68,12 @@ class Despachante:
         En caso que no se pase fecha por parametro, obtiene las politicas
         activas en el momento actual.
         '''
+        if fecha is None:
+            fecha = datetime.now()
         politicas = models.Politica.select().where(
             models.Politica.activa == True
         )
-        return [politica for politica in politicas
-                if politica.esta_activa(fecha)]
+        return [p for p in politicas if p.esta_activa(fecha)]
 
     def despacho_necesario(self):
         '''
