@@ -12,6 +12,7 @@ from jinja2 import Environment, PackageLoader
 
 log = logging.getLogger(__name__)
 
+
 class Despachante:
     '''
     Traduce politicas de usuario en un script bash que sera interpretado por el
@@ -57,12 +58,10 @@ class Despachante:
             return True
         anterior = set(self.obtener_politicas(ultimo_despacho))
         ahora = set(self.obtener_politicas())
-        log.debug("Politicas activas el ultimo despacho: {politicas}" %
-            [str(p) for p in anterior]
-        )
-        log.debug("Politicas activas ahora: {politicas}" %
-            [str(p) for p in ahora]
-        )
+        log.debug("Politicas activas el ultimo despacho: %s" %
+                  [str(p) for p in anterior])
+        log.debug("Politicas activas ahora: %s" %
+                  [str(p) for p in ahora])
         # si la diferencia es distinta de cero, hay cambios
         return len(anterior - ahora) + len(ahora - anterior) != 0
 
@@ -93,7 +92,7 @@ class Despachante:
         log.debug("Hay reglas temporales? %s" % reglas_temporales)
         log.debug("Hay cambio politicas? %s" % cambio_politicas)
         return (self.fecha_ultimo_despacho is None or reglas_temporales and
-                cambio_de_politicas)
+                cambio_politicas)
 
     def despachar(self):
         '''

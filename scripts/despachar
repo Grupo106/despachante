@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 import sys
 import logging
+import logging.handlers
 import argparse
 from netcop.despachante import Despachante, models
 
-log = logging.getLogger('netcop')
 
 # Manejo de argumentos
 # ---------------------------------------------------------------------------
@@ -14,7 +14,20 @@ parser.add_argument("-t", "--temporizado",
                     help="Ejecuta el script en modo temporizado. Si no es "
                          "necesario un despacho nuevo, no hace nada.",
                     action="store_true")
+parser.add_argument("-d", "--debug",
+                    help="Activa el modo DEBUG",
+                    action="store_true")
 args = parser.parse_args()
+
+# Configuro logging
+# ---------------------------------------------------------------------------
+log = logging.getLogger()
+if args.debug:
+    log.setLevel(logging.DEBUG)
+    log.addHandler(logging.StreamHandler())
+else:
+    log.setLevel(logging.INFO)
+    log.addHandler(logging.handlers.SysLogHandler(address='/dev/log'))
 
 try:
     log.debug("[*] Conectando base de datos")
@@ -31,8 +44,7 @@ try:
     else:
         log.info("No hay necesidad de despacho")
 except Exception as e:
-    log.error("Error fatal: %s" % str(e))
-    raise
+    log.exception("Error fatal: %s" % str(e))
 finally:
     if not models.db.is_closed():
         log.debug("[*] Cerrando base de datos")
