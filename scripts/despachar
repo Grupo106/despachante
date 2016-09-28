@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-import syslog
+import logging
 import argparse
 from netcop.despachante import Despachante, models
+
+log = logging.getLogger('netcop')
 
 # Manejo de argumentos
 # ---------------------------------------------------------------------------
@@ -15,27 +17,23 @@ parser.add_argument("-t", "--temporizado",
 args = parser.parse_args()
 
 try:
-    syslog.openlog('despachante')
-    syslog.syslog(syslog.LOG_DEBUG, "[*] Conectando base de datos")
+    log.debug("[*] Conectando base de datos")
     models.db.connect()
     despachante = Despachante()
     programado = args.temporizado
     necesario = despachante.despacho_necesario()
-    syslog.syslog(syslog.LOG_DEBUG, "[*] Despacho programado: %s" % programado)
-    syslog.syslog(syslog.LOG_DEBUG, "[*] Despacho necesario: %s" % necesario)
+    log.debug("[*] Despacho programado: %s" % programado)
+    log.debug("[*] Despacho necesario: %s" % necesario)
     if not programado or necesario:
-        syslog.syslog(syslog.LOG_INFO, "Despachando politicas")
+        log.info("Despachando politicas")
         despachante.despachar()
-        syslog.syslog(syslog.LOG_INFO, "El despacho fue exitoso")
+        log.info("El despacho fue exitoso")
     else:
-        syslog.syslog(syslog.LOG_INFO, "No hay necesidad de despacho")
-        print("No hay necesidad de despacho.")
+        log.info("No hay necesidad de despacho")
 except Exception as e:
-    syslog.syslog(syslog.LOG_CRIT, "Error fatal: %s" % str(e))
-    print >> sys.stderr, str(e)
+    log.error("Error fatal: %s" % str(e))
     raise
 finally:
-    syslog.closelog()
     if not models.db.is_closed():
-        syslog.syslog(syslog.LOG_DEBUG, "[*] Cerrando base de datos")
+        log.debug("[*] Cerrando base de datos")
         models.db.close()

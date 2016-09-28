@@ -4,12 +4,13 @@ Encargado de transformar las politicas creadas por el usuario en comandos que
 el sistema operativo pueda reconocer.
 '''
 import os
-import syslog
+import logging
 import subprocess
 from . import models, config
 from datetime import datetime
 from jinja2 import Environment, PackageLoader
 
+log = logging.getLogger(__name__)
 
 class Despachante:
     '''
@@ -29,9 +30,7 @@ class Despachante:
         Devuelve None si no se encontro despacho anterior.
         '''
         try:
-            f = datetime.fromtimestamp(os.path.getmtime(self.SCRIPT_FILE))
-            syslog.syslog(syslog.LOG_DEBUG, "[*] Fecha ultimo despacho %s" % f)
-            return f
+            return datetime.fromtimestamp(os.path.getmtime(self.SCRIPT_FILE))
         except OSError:
             return None
 
@@ -54,9 +53,16 @@ class Despachante:
         ultimo_despacho = self.fecha_ultimo_despacho
         # si no se encontro ultimo despacho, hay cambios de politicas
         if ultimo_despacho is None:
+            log.info("No se encontro despacho previo")
             return True
         anterior = set(self.obtener_politicas(ultimo_despacho))
         ahora = set(self.obtener_politicas())
+        log.debug("Politicas activas el ultimo despacho: {politicas}" %
+            [str(p) for p in anterior]
+        )
+        log.debug("Politicas activas ahora: {politicas}" %
+            [str(p) for p in ahora]
+        )
         # si la diferencia es distinta de cero, hay cambios
         return len(anterior - ahora) + len(ahora - anterior) != 0
 
@@ -68,8 +74,7 @@ class Despachante:
         En caso que no se pase fecha por parametro, obtiene las politicas
         activas en el momento actual.
         '''
-        if fecha is None:
-            fecha = datetime.now()
+        fecha = datetime.now() if fecha is None else fecha
         politicas = models.Politica.select().where(
             models.Politica.activa == True
         )
@@ -83,9 +88,12 @@ class Despachante:
         o cuando existan reglas temporales y haya que activar o desactivar
         politicas debido al paso del tiempo.
         '''
-        return (self.fecha_ultimo_despacho is None or
-                self.hay_reglas_temporales() and
-                self.hay_cambio_de_politicas())
+        reglas_temporales = self.hay_reglas_temporales()
+        cambio_politicas = self.hay_cambio_de_politicas()
+        log.debug("Hay reglas temporales? %s" % reglas_temporales)
+        log.debug("Hay cambio politicas? %s" % cambio_politicas)
+        return (self.fecha_ultimo_despacho is None or reglas_temporales and
+                cambio_de_politicas)
 
     def despachar(self):
         '''
@@ -102,14 +110,17 @@ class Despachante:
             'bw_bajada': config.NETCOP['velocidad_bajada'],
             'bw_subida': config.NETCOP['velocidad_subida'],
             'cant_alta_prioridad': len(
-                [x for x in politicas if x.prioridad == x.PRIO_ALTA]),
+                [x for x in politicas if x.prioridad == x.PRIO_ALTA]
+            ),
         }
+        log.debug("Generando script")
         script = template.render(**contexto)
-        # escribo script en el archivo
+        log.debug("Escribiendo script en archivo %s" % self.SCRIPT_FILE)
         with open(self.SCRIPT_FILE, 'w') as f:
             for line in script.split('\n'):
                 line = line.strip()
                 if line:
                     f.write(line + '\n')
         # ejecuto script
+        log.debug("Ejecutando script %s" % self.SCRIPT_FILE)
         subprocess.Popen(['/bin/sh', self.SCRIPT_FILE])
