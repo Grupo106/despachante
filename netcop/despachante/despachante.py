@@ -4,6 +4,7 @@ Encargado de transformar las politicas creadas por el usuario en comandos que
 el sistema operativo pueda reconocer.
 '''
 import os
+import grp
 import logging
 import subprocess
 from . import models, config
@@ -121,6 +122,8 @@ class Despachante:
                 if line:
                     f.write(line + '\n')
         # cambio permisos para que pueda ser editado por grupo netcop
+        gid = grp.getgrnam("netcop").gr_gid
+        os.chown(self.SCRIPT_FILE, -1, gid)
         os.chmod(self.SCRIPT_FILE, 0660)
         # ejecuto script
         log.debug("Ejecutando script %s" % self.SCRIPT_FILE)
