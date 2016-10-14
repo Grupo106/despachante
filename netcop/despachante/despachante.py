@@ -120,6 +120,8 @@ class Despachante:
                 line = line.strip()
                 if line:
                     f.write(line + '\n')
+        # cambio permisos para que pueda ser editado por grupo netcop
+        os.chmod(self.SCRIPT_FILE, 0660)
         # ejecuto script
         log.debug("Ejecutando script %s" % self.SCRIPT_FILE)
         subprocess.Popen(['/bin/sh', self.SCRIPT_FILE])
