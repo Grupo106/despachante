@@ -8,7 +8,7 @@ import jinja2
 from datetime import datetime, timedelta
 from mock import Mock
 
-from netcop.despachante import models, Despachante, config
+from netcop.despachante import models, Despachante
 from netcop.despachante.models import Flag, Param
 from jinja2 import Environment, PackageLoader
 
@@ -842,6 +842,27 @@ class DespachanteTests(unittest.TestCase):
         with models.db.atomic() as transaction:
             models.Politica.create(nombre='politica1')
             models.Politica.create(nombre='politica2')
+            despachante = Despachante()
+            mock_open = mock.mock_open()
+            with mock.patch('netcop.despachante.despachante.open', mock_open):
+                despachante.despachar()
+            assert mock_render.called
+            assert mock_open.called
+            assert mock_popen.called
+            mock_open.assert_called_with(Despachante.SCRIPT_FILE, 'w')
+            mock_popen.assert_called_with(['/bin/sh', Despachante.SCRIPT_FILE])
+            transaction.rollback()
+
+    @mock.patch('subprocess.Popen')
+    @mock.patch.object(jinja2.environment.Template, 'render')
+    def test_politica_utf8(self, mock_render, mock_popen):
+        '''
+        Prueba la creacion y ejecucion del script de politicas con nombres en
+        utf-8
+        '''
+        with models.db.atomic() as transaction:
+            models.Politica.create(nombre=u'ñandú')
+            models.Politica.create(nombre=u'voçé')
             despachante = Despachante()
             mock_open = mock.mock_open()
             with mock.patch('netcop.despachante.despachante.open', mock_open):
