@@ -408,7 +408,7 @@ class Politica(models.Model):
         return hash(self.id_politica)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre.encode('utf-8')
 
     class Meta:
         database = db
